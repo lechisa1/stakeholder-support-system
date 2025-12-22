@@ -132,14 +132,17 @@ const updateInstitute = async (req, res) => {
     if (!institute)
       return res.status(404).json({ message: "Institute not found" });
 
-    // Normalize name to JSON if provided
-    if (name) {
-      if (typeof name === "string") {
-        name = { en: name };
-      } else if (typeof name !== "object" || name === null) {
-        return res.status(400).json({ message: "Invalid name format" });
-      }
+    // // Normalize name to JSON if provided
+    // if (name) {
+    //   if (typeof name === "string") {
+    //     name = { en: name };
+    //   } else if (typeof name !== "object" || name === null) {
+    //     return res.status(400).json({ message: "Invalid name format" });
+    //   }
 
+    //   institute.name = name;
+    // }
+    if (name) {
       institute.name = name;
     }
     institute.description = description || institute.description;
