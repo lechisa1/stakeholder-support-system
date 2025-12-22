@@ -13,7 +13,6 @@ import { Button } from "../../ui/cn/button";
 import { PageLayout } from "../../common/PageLayout";
 import { DataTable } from "../../common/CommonTable";
 import { ActionButton, FilterField } from "../../../types/layout";
-import DetailHeader from "../../common/DetailHeader";
 
 const RoleTableColumns = (handleDelete: (id: string) => void) => [
   {
@@ -22,6 +21,11 @@ const RoleTableColumns = (handleDelete: (id: string) => void) => [
     cell: ({ row }: any) => (
       <div className="font-medium text-blue-600">{row.getValue("name")}</div>
     ),
+  },
+  {
+    accessorKey: "role_type",
+    header: "Type",
+    cell: ({ row }: any) => <div>{row.getValue("role_type") || "N/A"}</div>,
   },
   {
     accessorKey: "description",
@@ -104,7 +108,10 @@ export default function RoleList() {
       icon: <Plus className="h-4 w-4" />,
       variant: "default",
       size: "default",
-      onClick: () => {navigate("/role/create")},  
+      onClick: () => {
+        navigate("/role/create");
+      },
+      permissions: ["ROLES:CREATE"],
     },
   ];
 
@@ -153,7 +160,7 @@ export default function RoleList() {
 
   return (
     <>
-    {/* <DetailHeader className="mb-5 mt-2" breadcrumbs={[{ title: "Roles", link: "" }]} /> */}
+      {/* <DetailHeader className="mb-5 mt-2" breadcrumbs={[{ title: "Roles", link: "" }]} /> */}
 
       <PageLayout
         filters={filterFields}
@@ -171,7 +178,6 @@ export default function RoleList() {
           currentIndex={pageDetail.pageIndex}
         />
       </PageLayout>
-
     </>
   );
 }

@@ -21,6 +21,7 @@ import { useState } from "react";
 import DeleteModal from "../../components/common/DeleteModal";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { ComponentGuard } from "../../components/common/ComponentGuard";
 const OrganizationDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -119,15 +120,19 @@ const OrganizationDetail = () => {
           <div className="flex justify-between">
             <DetailHeader breadcrumbs={[{ title: "Organization", link: "" }]} />
             <div className="flex justify-center items-end gap-4">
-              <span>
-                <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
-              </span>
-              <span>
-                <Trash2
-                  onClick={() => setIsOpen(true)}
-                  className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold"
-                />
-              </span>
+              <ComponentGuard permissions={["ORGANIZATIONS:UPDATE"]}>
+                <span>
+                  <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                </span>
+              </ComponentGuard>
+              <ComponentGuard permissions={["ORGANIZATIONS:DELETE"]}>
+                <span>
+                  <Trash2
+                    onClick={() => setIsOpen(true)}
+                    className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold"
+                  />
+                </span>
+              </ComponentGuard>
             </div>
           </div>
 
@@ -200,7 +205,9 @@ const OrganizationDetail = () => {
           </Card>
 
           {/* Projects Section */}
-          <ProjectList insistitute_id={id || ""} userType="external_user" />
+          <ComponentGuard permissions={["PROJECTS:READ"]}>
+            <ProjectList insistitute_id={id || ""} userType="external_user" />
+          </ComponentGuard>
         </div>
       </div>
     </>

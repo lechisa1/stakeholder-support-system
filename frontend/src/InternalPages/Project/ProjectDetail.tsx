@@ -21,13 +21,16 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import DeleteModal from "../../components/common/DeleteModal";
-import ProjectUserList from "../../components/tables/lists/projectUserList";
 import { ActionButton } from "../../types/layout";
-import HierarchyNodeList from "../../components/tables/lists/hierarchyNodeList";
 import IssueFlowList from "../../components/tables/lists/issueFlowList";
 import ProjectAssignedUsers from "../../components/tables/lists/projectAssignedUsers";
-import { useBreadcrumbTitleEffect, useBreadcrumbTitleById } from "../../hooks/useBreadcrumbTitleEffect";
+import {
+  useBreadcrumbTitleEffect,
+  useBreadcrumbTitleById,
+} from "../../hooks/useBreadcrumbTitleEffect";
 import { useGetInstituteByIdQuery } from "../../redux/services/instituteApi";
+import { ComponentGuard } from "../../components/common/ComponentGuard";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function ProjectDetail() {
   const { id, instituteId } = useParams<{ id: string; instituteId?: string }>();
@@ -39,16 +42,27 @@ export default function ProjectDetail() {
     useDeleteProjectMutation();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"issueFlow" | "users">(
-    "issueFlow"
-  );
-  
+  const { hasAnyPermission } = useAuth();
+
+  // Check permissions for both tabs
+  const hasIssueFlowPermission = hasAnyPermission(["PROJECTS:ASSIGN_USERS"]);
+  const hasUsersPermission = hasAnyPermission(["PROJECTS:ASSIGN_USERS"]);
+
+  // Determine active tab based on permissions
+  const [activeTab, setActiveTab] = useState<"issueFlow" | "users">(() => {
+    // If only one permission exists, default to that tab
+    if (hasIssueFlowPermission && !hasUsersPermission) return "issueFlow";
+    if (!hasIssueFlowPermission && hasUsersPermission) return "users";
+    // If both exist, default to issueFlow
+    return "issueFlow";
+  });
+
   // Set institute title for the middle breadcrumb (Institute Details)
   useBreadcrumbTitleById(instituteId, institute?.name);
-  
+
   // Set project title for the last breadcrumb (Project Details)
   useBreadcrumbTitleEffect(project?.name, id);
-    
+
   // Save project ID to localStorage on every load/update
   useEffect(() => {
     if (id) {
@@ -56,22 +70,31 @@ export default function ProjectDetail() {
     }
   }, [id]);
 
-  const actions: ActionButton[] = [
-    {
+  // Build actions based on permissions
+  const actions: ActionButton[] = [];
+
+  if (hasIssueFlowPermission) {
+    actions.push({
       label: "Support Request Flow",
       icon: <FolderIcon className="h-4 w-4" />,
       variant: activeTab === "issueFlow" ? "default" : "outline",
       size: "default",
       onClick: () => setActiveTab("issueFlow"),
-    },
-    {
+    });
+  }
+
+  if (hasUsersPermission) {
+    actions.push({
       label: "Assigned Users",
       icon: <Users className="h-4 w-4" />,
       variant: activeTab === "users" ? "default" : "outline",
       size: "default",
       onClick: () => setActiveTab("users"),
-    },
-  ];
+    });
+  }
+
+  // Only show toggle if we have multiple actions
+  const showToggle = actions.length > 1;
 
   const handleDelete = async () => {
     try {
@@ -153,7 +176,6 @@ export default function ProjectDetail() {
       <div className="min-h-screen bg-[#F9FBFC] p-6 pb-24">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex justify-between">
-          
             <DetailHeader
               breadcrumbs={[
                 { title: "Organization", link: "" },
@@ -270,19 +292,22 @@ export default function ProjectDetail() {
           </Card>
 
           {/* Project Hierarchy */}
-          {activeTab === "issueFlow" && (
-            <IssueFlowList
-              toggleActions={actions}
-              isAssignUsersToStructure={true}
-              // parent_hierarchy_node_id={project.hierarchy_node_id}
-            />
+          {hasIssueFlowPermission && activeTab === "issueFlow" && (
+            <ComponentGuard permissions={["PROJECTS:ASSIGN_USERS"]}>
+              <IssueFlowList
+                toggleActions={showToggle ? actions : undefined} // Only pass actions if showToggle is true
+                isAssignUsersToStructure={true}
+              />
+            </ComponentGuard>
           )}
 
-          {activeTab === "users" && (
-            <ProjectAssignedUsers
-              project_id={id || ""}
-              toggleActions={actions}
-            />
+          {hasUsersPermission && activeTab === "users" && (
+            <ComponentGuard permissions={["PROJECTS:ASSIGN_USERS"]}>
+              <ProjectAssignedUsers
+                project_id={id || ""}
+                toggleActions={showToggle ? actions : undefined} // Only pass actions if showToggle is true
+              />
+            </ComponentGuard>
           )}
         </div>
       </div>

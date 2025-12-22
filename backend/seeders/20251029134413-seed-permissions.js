@@ -33,12 +33,6 @@ module.exports = {
       { resource: "organizations", action: "update" },
       { resource: "organizations", action: "delete" },
 
-      // Organization Structure
-      { resource: "organization_structures", action: "create" },
-      { resource: "organization_structures", action: "read" },
-      { resource: "organization_structures", action: "update" },
-      { resource: "organization_structures", action: "delete" },
-
       // Project Management
       { resource: "projects", action: "create" },
       { resource: "projects", action: "read" },
@@ -46,34 +40,40 @@ module.exports = {
       { resource: "projects", action: "delete" },
       { resource: "projects", action: "assign_users" },
 
-      // Issue Management
-      { resource: "issues", action: "create" },
-      { resource: "issues", action: "read" },
-      { resource: "issues", action: "update" },
-      { resource: "issues", action: "delete" },
-      { resource: "issues", action: "assign" },
-      { resource: "issues", action: "accept" },
-      { resource: "issues", action: "resolve" },
-      { resource: "issues", action: "escalate" },
-      { resource: "issues", action: "view_own" },
-      { resource: "issues", action: "view_all" },
+      // Project Structure (External)
+      { resource: "project_structures", action: "create" },
+      { resource: "project_structures", action: "read" },
+      { resource: "project_structures", action: "update" },
+      { resource: "project_structures", action: "delete" },
 
-      // Issue Priority & Category
-      { resource: "issue_priorities", action: "create" },
-      { resource: "issue_priorities", action: "read" },
-      { resource: "issue_priorities", action: "update" },
-      { resource: "issue_priorities", action: "delete" },
+      // Support Request Management
+      { resource: "request", action: "create" },
+      { resource: "request", action: "read" },
+      { resource: "request", action: "update" },
+      { resource: "request", action: "delete" },
+      { resource: "request", action: "assign" },
+      { resource: "request", action: "accept" },
+      { resource: "request", action: "resolve" },
+      { resource: "request", action: "escalate" },
+      { resource: "request", action: "view_own" },
+      { resource: "request", action: "view_all" },
 
-      { resource: "issue_categories", action: "create" },
-      { resource: "issue_categories", action: "read" },
-      { resource: "issue_categories", action: "update" },
-      { resource: "issue_categories", action: "delete" },
+      // Support Request Priority & Category
+      { resource: "request_priorities", action: "create" },
+      { resource: "request_priorities", action: "read" },
+      { resource: "request_priorities", action: "update" },
+      { resource: "request_priorities", action: "delete" },
 
-      // Issue Flow Management
-      { resource: "issue_flows", action: "create" },
-      { resource: "issue_flows", action: "read" },
-      { resource: "issue_flows", action: "update" },
-      { resource: "issue_flows", action: "delete" },
+      { resource: "request_categories", action: "create" },
+      { resource: "request_categories", action: "read" },
+      { resource: "request_categories", action: "update" },
+      { resource: "request_categories", action: "delete" },
+
+      // Support Reques Flow Management (Internal)
+      { resource: "request_flows", action: "create" },
+      { resource: "request_flows", action: "read" },
+      { resource: "request_flows", action: "update" },
+      { resource: "request_flows", action: "delete" },
 
       // Humnan Resource Management
       { resource: "human_resources", action: "create" },

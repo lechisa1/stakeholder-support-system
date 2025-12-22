@@ -108,6 +108,7 @@ export default function OrganizationList() {
       variant: "default", // matches allowed type
       size: "default", // matches allowed type
       onClick: () => setModalOpen(true),
+      permissions: ["ORGANIZATIONS:CREATE"],
     },
   ];
 

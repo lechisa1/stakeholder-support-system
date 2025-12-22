@@ -12,6 +12,8 @@ import {
   useGetProjectMetricsQuery,
 } from "../../../redux/services/projectMetricApi";
 import { CreateProjectMetricModal } from "../../modals/CreateProjectMetricModal";
+import { useAuth } from "../../../contexts/AuthContext";
+import { ComponentGuard } from "../../common/ComponentGuard";
 
 export default function ProjectMetricsList() {
   const [response, setResponse] = useState<any[]>([]);
@@ -27,6 +29,11 @@ export default function ProjectMetricsList() {
     useDeleteProjectMetricMutation();
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteMetricId, setDeleteMetricId] = useState<string>("");
+  const { hasAnyPermission } = useAuth();
+  const hasPermission = hasAnyPermission([
+    "HUMAN_RESOURCES:UPDATE",
+    "HUMAN_RESOURCES:DELETE",
+  ]);
 
   // --- Table columns ---
   const metricColumns = [
@@ -37,13 +44,24 @@ export default function ProjectMetricsList() {
         <div className="font-medium text-blue-600">{row.getValue("name")}</div>
       ),
     },
-    // {
-    //   accessorKey: "description",
-    //   header: "Description",
-    //   cell: ({ row }: any) => <div>{row.getValue("description") || "N/A"}</div>,
-    // },
-
     {
+      accessorKey: "is_active",
+      header: "Status",
+      cell: ({ row }: any) => {
+        const isActive = row.getValue("is_active");
+
+        return (
+          <span
+            className={`font-medium ${
+              isActive ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {isActive ? "Active" : "Inactive"}
+          </span>
+        );
+      },
+    },
+    hasPermission && {
       id: "actions",
       header: "Actions",
       cell: ({ row }: any) => {
@@ -51,38 +69,34 @@ export default function ProjectMetricsList() {
 
         return (
           <div className="flex items-center  space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0"
-              // onClick={() => openViewModal(metric)}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0"
-              // onClick={() => openEditModal(metric)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-              onClick={() => {
-                setDeleteModalOpen(true);
-                setDeleteMetricId(metric.project_metric_id);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <ComponentGuard permissions={["HUMAN_RESOURCES:UPDATE"]}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                // onClick={() => openEditModal(metric)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </ComponentGuard>
+            <ComponentGuard permissions={["HUMAN_RESOURCES:DELETE"]}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                onClick={() => {
+                  setDeleteModalOpen(true);
+                  setDeleteMetricId(metric.project_metric_id);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </ComponentGuard>
           </div>
         );
       },
     },
-  ];
+  ].filter(Boolean);
 
   const { data, isLoading, isError } = useGetProjectMetricsQuery({});
 
@@ -92,6 +106,7 @@ export default function ProjectMetricsList() {
       icon: <Plus className="h-4 w-4" />,
       variant: "default",
       size: "default",
+      permissions: ["HUMAN_RESOURCES:CREATE"],
       onClick: () => setModalOpen(true),
     },
   ];

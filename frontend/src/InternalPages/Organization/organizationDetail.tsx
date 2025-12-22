@@ -1,5 +1,8 @@
 import { useParams, Link } from "react-router-dom";
-import { useDeleteInstituteMutation, useGetInstituteByIdQuery } from "../../redux/services/instituteApi";
+import {
+  useDeleteInstituteMutation,
+  useGetInstituteByIdQuery,
+} from "../../redux/services/instituteApi";
 import PageMeta from "../../components/common/PageMeta";
 import Badge from "../../components/ui/badge/Badge";
 import { format } from "date-fns";
@@ -18,6 +21,7 @@ import DeleteModal from "../../components/common/DeleteModal";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
+import { ComponentGuard } from "../../components/common/ComponentGuard";
 const OrganizationDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -26,11 +30,15 @@ const OrganizationDetail = () => {
     isLoading,
     isError,
   } = useGetInstituteByIdQuery(id!);
-  const [deleteInstitute, { isLoading: isDeleteLoading }] = useDeleteInstituteMutation();
+  const [deleteInstitute, { isLoading: isDeleteLoading }] =
+    useDeleteInstituteMutation();
   const [isOpen, setIsOpen] = useState(false);
 
   // breadcrumbs
-  useBreadcrumbTitleEffect(organizationDetail?.name, organizationDetail?.institute_id);
+  useBreadcrumbTitleEffect(
+    organizationDetail?.name,
+    organizationDetail?.institute_id
+  );
   const handleDelete = async () => {
     try {
       await deleteInstitute(id!).unwrap();
@@ -117,12 +125,19 @@ const OrganizationDetail = () => {
           <div className="flex justify-between">
             <DetailHeader breadcrumbs={[{ title: "Organization", link: "" }]} />
             <div className="flex justify-center items-end gap-4">
-              <span>
-                <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
-              </span>
-              <span>
-                <Trash2 onClick={() => setIsOpen(true)} className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold" />
-              </span> 
+              <ComponentGuard permissions={["ORGANIZATIONS:UPDATE"]}>
+                <span>
+                  <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                </span>
+              </ComponentGuard>
+              <ComponentGuard permissions={["ORGANIZATIONS:DELETE"]}>
+                <span>
+                  <Trash2
+                    onClick={() => setIsOpen(true)}
+                    className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold"
+                  />
+                </span>
+              </ComponentGuard>
             </div>
           </div>
 
@@ -195,7 +210,10 @@ const OrganizationDetail = () => {
           </Card>
 
           {/* Projects Section */}
-          <ProjectList insistitute_id={id || ""} userType="internal_user"/>
+
+          <ComponentGuard permissions={["PROJECTS:READ"]}>
+            <ProjectList insistitute_id={id || ""} userType="internal_user" />
+          </ComponentGuard>
         </div>
       </div>
     </>

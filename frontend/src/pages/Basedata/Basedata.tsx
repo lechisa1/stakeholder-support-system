@@ -5,8 +5,6 @@ import InfoCard from "../../components/Basedata/card";
 import {
   FaExclamationTriangle,
   FaFlag,
-  FaUserTie,
-  FaLock,
   FaProjectDiagram,
 } from "react-icons/fa";
 
@@ -15,41 +13,12 @@ export default function Basedata() {
   const navigate = useNavigate();
 
   const cards = [
-    // {
-    //   title: t("basedata.organization_management"),
-    //   description: t("basedata.subtitle", {
-    //     title: t("basedata.organization"),
-    //   }),
-    //   icon: <FaBuilding size={26} color={"#094C81"} />,
-    //   route: "/organization",
-    // },
-    // {
-    //   title: t("basedata.org_structure_management"),
-    //   description: t("basedata.subtitle", {
-    //     title: t("basedata.org_structure"),
-    //   }),
-    //   icon: <FaBuilding size={24} color={"#094C81"} />,
-    //   route: "/org_structure",
-    // },
-    // {
-    //   title: t("basedata.level_management"),
-    //   description: t("basedata.subtitle", { title: t("basedata.level") }),
-    //   icon: <FaBuilding size={24} />,
-    //   route: "/branch",
-    // },
-
-    // {
-    //   title: t("basedata.branch_management"),
-    //   description: t("basedata.subtitle", { title: t("basedata.branch") }),
-    //   icon: <FaBuilding size={24} color={"#094C81"} />,
-    //   route: "/branch",
-    // },
-
     {
       title: t("basedata.issue_flow"),
       description: t("basedata.subtitle", { title: t("basedata.issue_flow") }),
       icon: <FaProjectDiagram size={24} color={"#094C81"} />,
       route: "/issue_configuration",
+      permission: ["REQUEST_FLOWS:READ"],
     },
     {
       title: t("basedata.priority_level_management"),
@@ -58,6 +27,7 @@ export default function Basedata() {
       }),
       icon: <FaFlag size={26} color={"#094C81"} />,
       route: "/priority_level",
+      permission: ["REQUEST_PRIORITIES:READ"],
     },
     {
       title: t("basedata.human_resource_management"),
@@ -66,6 +36,7 @@ export default function Basedata() {
       }),
       icon: <FaUserTie size={26} color={"#094C81"} />,
       route: "/human_resource",
+      permission: ["HUMAN_RESOURCES:READ"],
     },
 
     {
@@ -75,6 +46,7 @@ export default function Basedata() {
       }),
       icon: <FaExclamationTriangle size={26} color={"#094C81"} />,
       route: "/issue_category",
+      permission: ["REQUEST_CATEGORIES:READ"],
     },
   ];
 
@@ -96,6 +68,7 @@ export default function Basedata() {
               title={card.title}
               description={card.description}
               icon={card.icon}
+              permission={card.permission}
               buttonText={t("common.viewButton")}
               onClick={() => navigate(card.route)}
             />

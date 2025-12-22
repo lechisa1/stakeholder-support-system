@@ -56,6 +56,7 @@ import { useGetProjectMetricsQuery } from "../../redux/services/projectMetricApi
 import Switch from "../../components/form/switch/Switch";
 import { FaProjectDiagram } from "react-icons/fa";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
+import { ComponentGuard } from "../../components/common/ComponentGuard";
 
 // Type for wrapped API response
 interface UserApiResponse {
@@ -153,13 +154,18 @@ const UserDetail = () => {
     (type: any) => type.user_type_id === editForm.user_type_id
   );
   const isExternalUser = selectedUserType?.name === "external_user";
-  
+
   // Extract user data for breadcrumb - extract early to avoid redeclaration
-  const userDataForBreadcrumb = user ? ((user as unknown as UserApiResponse).data || user) as ExtendedUser : null;
-  
+  const userDataForBreadcrumb = user
+    ? (((user as unknown as UserApiResponse).data || user) as ExtendedUser)
+    : null;
+
   // Set dynamic breadcrumb title - must be called at top level before any early returns
-  useBreadcrumbTitleEffect(userDataForBreadcrumb?.full_name, userDataForBreadcrumb?.user_id);
-  
+  useBreadcrumbTitleEffect(
+    userDataForBreadcrumb?.full_name,
+    userDataForBreadcrumb?.user_id
+  );
+
   const handleDelete = async () => {
     try {
       await deleteUser(id!).unwrap();
@@ -232,7 +238,6 @@ const UserDetail = () => {
         role_ids: userRoleIds,
         project_metrics_ids: userMetricIds,
         user_type_id: userData.userType?.user_type_id || "",
-        
       });
     }
   };
@@ -401,8 +406,9 @@ const UserDetail = () => {
 
   // Handle wrapped response if API returns { success, message, data }
   // Use the already extracted userDataForBreadcrumb if available, otherwise extract it
-  const userData = userDataForBreadcrumb || ((user as unknown as UserApiResponse).data ||
-    user) as ExtendedUser;
+  const userData =
+    userDataForBreadcrumb ||
+    (((user as unknown as UserApiResponse).data || user) as ExtendedUser);
 
   // Extract roles and metrics from the response
   const userRolesList = userData.roles || [];
@@ -465,18 +471,22 @@ const UserDetail = () => {
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={handleEditClick}
-                    className="flex items-center gap-2 px-2 py-2 text-[#094C81] hover:bg-gray-100 hover:text-[#073954] cursor-pointer rounded-lg transition-colors"
-                  >
-                    <EditIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => setIsOpen(true)}
-                    className="flex items-center gap-2 px-2 py-2 text-red-600 hover:bg-red-100 cursor-pointer rounded-lg transition-colors"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
+                  <ComponentGuard permissions={["USERS:UPDATE", ""]}>
+                    <button
+                      onClick={handleEditClick}
+                      className="flex items-center gap-2 px-2 py-2 text-[#094C81] hover:bg-gray-100 hover:text-[#073954] cursor-pointer rounded-lg transition-colors"
+                    >
+                      <EditIcon className="h-5 w-5" />
+                    </button>
+                  </ComponentGuard>
+                  <ComponentGuard permissions={["USERS:DELETE"]}>
+                    <button
+                      onClick={() => setIsOpen(true)}
+                      className="flex items-center gap-2 px-2 py-2 text-red-600 hover:bg-red-100 cursor-pointer rounded-lg transition-colors"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </ComponentGuard>
                 </>
               )}
             </div>
@@ -597,18 +607,19 @@ const UserDetail = () => {
                         <SelectValue placeholder="Select User Type" />
                       </SelectTrigger>
                       <SelectContent>
-                      <SelectContent>
-  {userTypes?.data?.map((type: any) => (
-    <SelectItem
-      key={type.user_type_id}
-      value={type.user_type_id}
-      onClick={() => setTypeName(type.name)}
-    >
-      {type.name == "internal_user" ? "Internal User" : "External User"}
-    </SelectItem>
-  ))}
-</SelectContent>
-
+                        <SelectContent>
+                          {userTypes?.data?.map((type: any) => (
+                            <SelectItem
+                              key={type.user_type_id}
+                              value={type.user_type_id}
+                              onClick={() => setTypeName(type.name)}
+                            >
+                              {type.name == "internal_user"
+                                ? "Internal User"
+                                : "External User"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
                       </SelectContent>
                     </Select>
                   ) : (

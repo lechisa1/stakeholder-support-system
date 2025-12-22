@@ -106,6 +106,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     return updated;
   };
 
+  const userPermissionsSet = new Set(
+    user?.permissions.map((p) => `${p.resource}:${p.action}`.toUpperCase())
+  );
+
+  const hasPermission = (permission: string) =>
+    userPermissionsSet.has(permission.toUpperCase());
+  const hasAnyPermission = (permissions: string[]) =>
+    permissions.some((p) => userPermissionsSet.has(p.toUpperCase()));
+  const hasAllPermissions = (permissions: string[]) =>
+    permissions.every((p) => userPermissionsSet.has(p.toUpperCase()));
+
   const value: AuthContextType = {
     user,
     token,
@@ -122,9 +133,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     },
     clearError: () => setError(null),
     isAuthenticated: !!user && !!token,
-    hasPermission: () => false,
-    hasAnyPermission: () => false,
-    hasAllPermissions: () => false,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
     hasRole: () => false,
   };
 

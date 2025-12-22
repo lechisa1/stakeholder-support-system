@@ -23,6 +23,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/cn/card";
 import { Input } from "../../ui/cn/input";
 import { MdToggleOff, MdToggleOn } from "react-icons/md";
+import { useAuth } from "../../../contexts/AuthContext";
 // Types
 interface Permission {
   permission_id: string;
@@ -127,6 +128,7 @@ const PermissionItem: React.FC<{
   onToggle: (id: string) => Promise<void>;
   isToggling: boolean;
 }> = ({ permission, onToggle, isToggling }) => {
+  const { hasAnyPermission } = useAuth();
   const isActive = !!permission.is_active;
 
   const handleToggle = async (e: React.MouseEvent) => {
@@ -134,43 +136,42 @@ const PermissionItem: React.FC<{
     await onToggle(permission.permission_id);
   };
 
+  const togglePermission = hasAnyPermission(["PERMISSIONS:UPDATE"]);
+
   return (
     <div className="flex items-center justify-between py-1 px-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
       <div className="flex items-center space-x-3 flex-1">
         <span className="text-sm font-medium text-gray-700 capitalize">
           {permission.action.replace("_", " ")}
         </span>
-        {/* <span
-          className={`px-2 py-1 text-xs font-medium rounded-full ${
-            isActive
-              ? "bg-green-100 text-green-800 border border-green-200"
-              : "bg-red-100 text-red-800 border border-red-200"
-          }`}
-        >
-          {isActive ? "Active" : "Inactive"}
-        </span> */}
       </div>
 
-      <button
-        className={` p-0 transition-all duration-200 ${
-          isActive
-            ? " text-green-700"
-            : "   text-red-700"
-        }`}
-        onClick={handleToggle}
-        disabled={isToggling}
-        title={isActive ? "Deactivate permission" : "Activate permission"}
-      >
-        {isToggling ? (
-          <div className="w-10 h-10 flex items-center justify-center">
-            <div className="h-6 w-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : isActive ? (
-          <MdToggleOn className="h-10 w-10 " />
-        ) : (
-          <MdToggleOff className="h-10 w-10 " />
-        )}
-      </button>
+      {togglePermission ? (
+        <button
+          className={` p-0 transition-all duration-200 ${
+            isActive ? " text-green-700" : "   text-red-700"
+          }`}
+          onClick={handleToggle}
+          disabled={isToggling}
+          title={isActive ? "Deactivate permission" : "Activate permission"}
+        >
+          {isToggling ? (
+            <div className="w-10 h-10 flex items-center justify-center">
+              <div className="h-6 w-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : isActive ? (
+            <MdToggleOn className="h-10 w-10 " />
+          ) : (
+            <MdToggleOff className="h-10 w-10 " />
+          )}
+        </button>
+      ) : (
+        <div
+          className={`w-10 h-10 flex items-center justify-center ${
+            isActive ? "text-green-700" : "text-red-700"
+          } opacity-50`}
+        ></div>
+      )}
     </div>
   );
 };
@@ -212,13 +213,15 @@ const ResourceGroup: React.FC<{
             className="p-1 hover:bg-gray-200 rounded"
           >
             {group.isExpanded ? (
-              <ChevronDown 
-              onClick={() => onToggleExpand(group.resource)}
-              className="h-5 w-5  text-[#094C81] hover:text-[#073954] cursor-pointer" />
+              <ChevronDown
+                onClick={() => onToggleExpand(group.resource)}
+                className="h-5 w-5  text-[#094C81] hover:text-[#073954] cursor-pointer"
+              />
             ) : (
               <ChevronRight
-              onClick={() => onToggleExpand(group.resource)}
-              className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer" />
+                onClick={() => onToggleExpand(group.resource)}
+                className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer"
+              />
             )}
           </button>
           <div className="p-2 text-[#094C81] bg-white rounded-lg shadow-sm">
