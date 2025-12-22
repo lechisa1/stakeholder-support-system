@@ -51,7 +51,7 @@ export const navItems: NavItem[] = [
         permission: ["PERMISSIONS:READ"],
       },
     ],
-    anyPermissions: ["USERS:READ", "OLES:READ", "PERMISSIONS:READ"],
+    anyPermissions: ["USERS:READ", "ROLES:READ", "PERMISSIONS:READ"],
   },
 
   // internal_user Only
