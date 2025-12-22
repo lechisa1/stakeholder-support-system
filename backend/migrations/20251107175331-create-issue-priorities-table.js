@@ -22,6 +22,10 @@ module.exports = {
         type: Sequelize.TEXT, // HEX color support
         allowNull: true,
       },
+      is_active: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
       response_duration: {
         type: Sequelize.INTEGER,
         allowNull: false,

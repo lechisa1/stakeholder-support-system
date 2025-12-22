@@ -57,8 +57,8 @@ module.exports = {
         type: Sequelize.UUID,
         allowNull: true,
         references: {
-          table: "project_metrics",
-          field: "project_metric_id",
+          model: "project_metrics",
+          key: "project_metric_id",
         },
         onDelete: "CASCADE",
         onUpdate: "CASCADE",
@@ -82,7 +82,7 @@ module.exports = {
 
     // Add unique constraint for (project_id, user_id)
     await queryInterface.addConstraint("internal_project_user_roles", {
-      fields: ["project_id", "user_id"],
+      fields: ["project_id", "user_id", "project_metric_id"],
       type: "unique",
       name: "unique_project_user_role",
     });

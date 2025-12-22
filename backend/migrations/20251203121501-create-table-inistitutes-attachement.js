@@ -45,13 +45,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    // Drop ENUM type for Postgres first
-    if (queryInterface.sequelize.getDialect() === "postgres") {
-      await queryInterface.sequelize.query(
-        `DROP TYPE IF EXISTS "enum_institute_attachments_type";`
-      );
-    }
-
     // Drop the table
     await queryInterface.dropTable("institute_attachments");
   },
