@@ -35,7 +35,6 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
     reset,
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
-    mode:"onBlur",
     defaultValues: {
       name: "",
       description: "",
@@ -99,7 +98,7 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
                 {...register("name")}
                 error={!!errors.name}
                 hint={errors.name?.message}
-                className="w-full h-10 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
+                // className="w-full h-10 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
               />
             </div>
 
@@ -111,10 +110,13 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
                 Description
               </Label>
               <TextArea
-               onBlur={() => trigger("description")} // ✅ Validate only when user leaves field
-               placeholder="Enter short description (optional)"
+                id="description"
+                placeholder="Enter short description (optional)"
                 value={watch("description") || ""}
-                onChange={(value) => setValue("description", value)}
+                onChange={(value) => {
+                  setValue("description", value);
+                  trigger("description");
+                }}
                 error={!!errors.description}
                 hint={errors.description?.message}
                 className="w-full"

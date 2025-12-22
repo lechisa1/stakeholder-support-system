@@ -3,21 +3,21 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/cn/button";
-import { Input } from "../ui/cn/input";
+import Input from "../form/input/InputField";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Label } from "../ui/cn/label";
 import {
-  useCreateHierarchyNodeMutation,
-  useGetParentNodesQuery,
-} from "../../redux/services/hierarchyNodeApi";
+  hierarchyNodeSchema,
+  type HierarchyNodeFormData,
+} from "../../utils/validation/schemas";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
   CheckCircleIcon,
-  CheckIcon,
   GitForkIcon,
   XIcon,
 } from "lucide-react";
-import { Textarea } from "../ui/cn/textarea";
 import { useCreateInternalNodeMutation, useGetInternalTreeQuery } from "../../redux/services/internalNodeApi";
 
 interface InstituteHierarchyCreationProps {
@@ -38,9 +38,17 @@ export function CreateInstituteHierarchyNodeModal({
 
   const [navigationStack, setNavigationStack] = useState<any[]>([]);
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("description");
-  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<HierarchyNodeFormData>({
+    resolver: zodResolver(hierarchyNodeSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
   // Track if parent is selected (for showing fields with animation)
   const isParentSelected = parent_hierarchy_node_id !== null && parent_hierarchy_node_id !== undefined 
     ? true 
@@ -128,26 +136,18 @@ export function CreateInstituteHierarchyNodeModal({
     console.log("Selected parent:", selectedParentNode);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Structure name is required");
-      return;
-    }
+  const onSubmit = async (data: HierarchyNodeFormData) => {
 
     try {
       await createNode({
         parent_id: parent_hierarchy_node_id || selectedParentNode || null,
-        name,
-        description,
+        name: data.name,
         is_active: true,
       }).unwrap();
 
       toast.success("Structure created!");
 
-      setName("");
-      setDescription("");
+      reset();
       resetNavigation();
       setHasSelectedParent(false);
       onClose();
@@ -182,7 +182,7 @@ export function CreateInstituteHierarchyNodeModal({
           Debug Data
         </button>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className={`flex gap-10 ${parent_hierarchy_node_id ? '' : ''}`}>
           {!parent_hierarchy_node_id && (
               <div className={`flex flex-col transition-all duration-500 ${isParentSelected ? 'w-1/2' : 'w-full'}`}>
@@ -328,10 +328,9 @@ export function CreateInstituteHierarchyNodeModal({
                   <Input
                     id="structure-name"
                     placeholder="Enter structure name"
-                    value={name}
-                    className="w-full h-10 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
-                    onChange={(e) => setName(e.target.value)}
-                    required
+                    {...register("name")}
+                    error={!!errors.name}
+                    hint={errors.name?.message}
                   />
                 </div>
 
@@ -350,10 +349,9 @@ export function CreateInstituteHierarchyNodeModal({
                   <Input
                     id="structure-name"
                     placeholder="Enter structure name"
-                    value={name}
-                    className="w-full h-10 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
-                    onChange={(e) => setName(e.target.value)}
-                    required
+                    {...register("name")}
+                    error={!!errors.name}
+                    hint={errors.name?.message}
                   />
                 </div>
 
@@ -382,8 +380,8 @@ export function CreateInstituteHierarchyNodeModal({
 
             <Button
               type="submit"
-              disabled={isCreatingNode || !name.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={isCreatingNode}
+              className="bg-[#094C81] hover:bg-[#094C81]/80 text-white"
             >
               {isCreatingNode ? "Creating..." : "Create "}
             </Button>

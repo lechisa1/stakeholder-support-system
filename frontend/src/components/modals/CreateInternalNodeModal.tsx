@@ -3,8 +3,10 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/cn/button";
-import { Input } from "../ui/cn/input";
+import Input from "../form/input/InputField";
 import { Label } from "../ui/cn/label";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
   ArrowLeftIcon,
@@ -20,7 +22,10 @@ import {
   useGetInternalTreeQuery,
 } from "../../redux/services/internalNodeApi";
 import { shortenText } from "../../utils/shortenText";
-
+import {
+  hierarchyNodeSchema,
+  type HierarchyNodeFormData,
+} from "../../utils/validation/schemas";
 interface HierarchyCreateionProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,6 +44,18 @@ export function CreateInternalNodeModal({
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<HierarchyNodeFormData>({
+    resolver: zodResolver(hierarchyNodeSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
 
   // Fetch all nodes of a project - skip if parent_hierarchy_node_id is provided
   const { data: parentNodesData, isFetching: isFetchingParents } =
@@ -153,29 +170,16 @@ export function CreateInternalNodeModal({
     console.log("Selected node object:", getSelectedNode());
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!name.trim()) {
-      toast.error("Structure name is required");
-      return;
-    }
-
+  const onSubmit = async (data: HierarchyNodeFormData) => {
     try {
       await createNode({
-        parent_id: selectedParentNode, // This will be passed correctly now
-        name,
-        description,
+        parent_id: selectedParentNode,
+        name: data.name, // ✅ validated
         is_active: true,
       }).unwrap();
 
       toast.success("Structure created!");
-      
-      setName("");
-      setDescription("");
-      // resetNavigation();
-      // setHasSelectedParent(false);
-      // onClose();
+      reset();
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to create structure");
     }
@@ -210,7 +214,7 @@ export function CreateInternalNodeModal({
           Debug Data
         </button>
 
-        <form onSubmit={handleSubmit} className="">
+        <form onSubmit={handleSubmit(onSubmit)} className="">
           <div className={`flex gap-10 `}>
             {
               <div
@@ -315,7 +319,7 @@ export function CreateInternalNodeModal({
                                     </div>
                                     {node.description && (
                                       <div className="text-sm text-gray-600 truncate">
-                                        {shortenText(node.description,40)}
+                                        {shortenText(node.description, 40)}
                                       </div>
                                     )}
                                     <div className="text-xs text-gray-500 mt-1">
@@ -372,17 +376,14 @@ export function CreateInternalNodeModal({
                   <Label className="block text-sm text-[#094C81] font-medium mb-2">
                     Structure Name *
                   </Label>
-                  <input
-                    id="structure-name"
+                  <Input
+                    id="name"
                     placeholder="Enter structure name"
-                    value={name}
-                    className="w-full h-10 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
-                    onChange={(e) => setName(e.target.value)}
-                    required
+                    {...register("name")}
+                    error={!!errors.name}
+                    hint={errors.name?.message}
                   />
                 </div>
-
-               
               </div>
             }
           </div>

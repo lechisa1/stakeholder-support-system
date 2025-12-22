@@ -178,7 +178,6 @@ export type RoleFormData = z.infer<typeof roleSchema>;
 export const projectMetricSchema = createSchema({
   name: rules.nonEmptyString("Metric name is required"),
   description: rules.optionalString,
-  weight: rules.optionalNumber,
   is_active: rules.boolean,
 });
 export type ProjectMetricFormData = z.infer<typeof projectMetricSchema>;
