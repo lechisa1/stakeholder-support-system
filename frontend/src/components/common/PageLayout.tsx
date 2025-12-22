@@ -12,6 +12,7 @@ import {
   SelectValue,
   SelectTrigger,
 } from "../ui/cn/select";
+import { useAuth } from "../../contexts/AuthContext";
 
 export const PageLayout: React.FC<PageLayoutProps> = ({
   title,
@@ -27,7 +28,7 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-
+  const { hasAnyPermission } = useAuth();
   // Local state to control input value
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -53,6 +54,13 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
     },
     [location.pathname, location.search, navigate]
   );
+
+  const filteredActions = actions.filter((action) => {
+    if (!action.permissions || action.permissions.length === 0) {
+      return true; // no permission required
+    }
+    return hasAnyPermission(action.permissions);
+  });
 
   return (
     <div className="p-6 border rounded-lg bg-white shadow">
@@ -105,7 +113,6 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
             )}
           </div>
 
-
           {/* Right side - Search, Filters, and Actions */}
           <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
@@ -151,9 +158,9 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
             )}
 
             {/* Actions */}
-            {actions.length > 0 && (
+            {filteredActions.length > 0 && (
               <div className="flex items-center space-x-2 text-white">
-                {actions.map((action, index) => (
+                {filteredActions.map((action, index) => (
                   <Button
                     key={index}
                     variant={action.variant || "default"}

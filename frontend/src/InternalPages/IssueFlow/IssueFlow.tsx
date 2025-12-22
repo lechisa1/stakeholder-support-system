@@ -19,6 +19,7 @@ import { useState } from "react";
 import { CreateChildInternalNodeModal } from "../../components/modals/CreateChildInternalNodeModal";
 import HierarchyUsersList from "../../components/tables/lists/HierarchyUsersList";
 import InternalNodeUsersList from "../../components/tables/lists/InternalNodeUsersList";
+import { ComponentGuard } from "../../components/common/ComponentGuard";
 
 const IssueFlow = () => {
   const { id } = useParams<{ id: string }>();
@@ -103,12 +104,16 @@ const IssueFlow = () => {
               ]}
             />
             <div className="flex justify-center items-end gap-4">
-              <span>
-                <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
-              </span>
-              <span>
-                <Trash2 className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold" />
-              </span>
+              <ComponentGuard permissions={["REQUEST_FLOWS:UPDATE"]}>
+                <span>
+                  <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                </span>
+              </ComponentGuard>
+              <ComponentGuard permissions={["REQUEST_FLOWS:DELETE"]}>
+                <span>
+                  <Trash2 className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold" />
+                </span>
+              </ComponentGuard>
             </div>
           </div>
 
@@ -152,18 +157,19 @@ const IssueFlow = () => {
                     </div>
                   </div>
                 </>
-
-                <Button
-                  variant="default"
-                  size="default"
-                  onClick={() => setModalOpen(true)}
-                  className="flex items-center space-x-2"
-                >
-                  <span className="h-4 w-4">
-                    <Plus className="h-4 w-4" />
-                  </span>
-                  <span>Add Child</span>
-                </Button>
+                <ComponentGuard permissions={["REQUEST_FLOWS:CREATE"]}>
+                  <Button
+                    variant="default"
+                    size="default"
+                    onClick={() => setModalOpen(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <span className="h-4 w-4">
+                      <Plus className="h-4 w-4" />
+                    </span>
+                    <span>Add Child</span>
+                  </Button>
+                </ComponentGuard>
               </div>
 
               {/* Details - Horizontal Compact Layout */}
@@ -191,7 +197,7 @@ const IssueFlow = () => {
                     </span>
                   </div>
                 )}
-{/* 
+                {/* 
                 {issueFlow.created_at && (
                   <div className="flex items-center gap-1.5">
                     <CalendarIcon className="h-3.5 w-3.5 text-[#1E516A]" />

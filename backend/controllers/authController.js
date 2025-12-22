@@ -7,9 +7,6 @@ const {
   HierarchyNode,
   InstituteProject,
   Role,
-  SubRole,
-  RoleSubRole,
-  RoleSubRolePermission,
   InternalProjectUserRole,
   InternalNode,
   Permission,
@@ -17,6 +14,7 @@ const {
   ProjectMetric,
   ProjectMetricUser,
   UserRoles,
+  RolePermission,
 } = require("../models");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -63,6 +61,21 @@ const login = async (req, res) => {
           model: Role,
           as: "roles",
           through: { attributes: [] },
+          include: [
+            {
+              model: Permission,
+              as: "permissions",
+              through: {
+                model: RolePermission,
+                attributes: ["is_active"],
+              },
+              attributes: ["permission_id", "action", "resource"],
+              where: {
+                is_active: true,
+              },
+              required: false,
+            },
+          ],
         },
         {
           model: ProjectMetric,
@@ -82,11 +95,21 @@ const login = async (req, res) => {
               model: Role,
               as: "role",
               attributes: ["role_id", "name"],
-            },
-            {
-              model: SubRole,
-              as: "subRole",
-              attributes: ["sub_role_id", "name"],
+              include: [
+                {
+                  model: Permission,
+                  as: "permissions",
+                  through: {
+                    model: RolePermission,
+                    attributes: ["is_active"],
+                  },
+                  attributes: ["permission_id", "action", "resource"],
+                  where: {
+                    is_active: true,
+                  },
+                  required: false,
+                },
+              ],
             },
             {
               model: HierarchyNode,
@@ -108,6 +131,21 @@ const login = async (req, res) => {
               model: Role,
               as: "role",
               attributes: ["role_id", "name"],
+              include: [
+                {
+                  model: Permission,
+                  as: "permissions",
+                  through: {
+                    model: RolePermission,
+                    attributes: ["is_active"],
+                  },
+                  attributes: ["permission_id", "action", "resource"],
+                  where: {
+                    is_active: true,
+                  },
+                  required: false,
+                },
+              ],
             },
             {
               model: InternalNode,
@@ -129,6 +167,51 @@ const login = async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ message: "Invalid email or password" });
 
+    // Collect all unique permissions from all roles
+    const allPermissions = new Map();
+
+    // Helper function to add permissions from a role
+    const addRolePermissions = (role) => {
+      if (role && role.permissions) {
+        role.permissions.forEach((permission) => {
+          if (!allPermissions.has(permission.permission_id)) {
+            allPermissions.set(permission.permission_id, {
+              permission_id: permission.permission_id,
+              action: permission.action,
+              resource: permission.resource,
+            });
+          }
+        });
+      }
+    };
+
+    // Add permissions from global roles
+    if (user.roles) {
+      user.roles.forEach((role) => {
+        addRolePermissions(role);
+      });
+    }
+
+    // Add permissions from project roles
+    if (user.projectRoles) {
+      user.projectRoles.forEach((projectRole) => {
+        if (projectRole.role) {
+          addRolePermissions(projectRole.role);
+        }
+      });
+    }
+
+    // Add permissions from internal project roles
+    if (user.internalProjectUserRoles) {
+      user.internalProjectUserRoles.forEach((internalRole) => {
+        if (internalRole.role) {
+          addRolePermissions(internalRole.role);
+        }
+      });
+    }
+
+    // Convert Map to array
+    const uniquePermissions = Array.from(allPermissions.values());
     // Format user data for token
     const userDataForToken = {
       user_id: user.user_id,
@@ -162,6 +245,8 @@ const login = async (req, res) => {
           }
         : null,
       // Include global roles and permissions
+      // Include unique flattened permissions
+      permissions: uniquePermissions,
       roles: user.roles
         ? user.roles.map((role) => ({
             role_id: role.role_id,
@@ -211,6 +296,12 @@ const login = async (req, res) => {
           role: pr.role ? pr.role.name : null,
           role_id: pr.role ? pr.role.role_id : null,
           sub_role_id: pr.subRole ? pr.subRole.sub_role_id : null,
+          permissions:
+            pr.role?.permissions?.map((p) => ({
+              permission_id: p.permission_id,
+              action: p.action,
+              resource: p.resource,
+            })) || [],
           hierarchy_node: pr.hierarchyNode
             ? {
                 hierarchy_node_id: pr.hierarchyNode.hierarchy_node_id,
@@ -231,6 +322,12 @@ const login = async (req, res) => {
             : null,
           role: ipr.role ? ipr.role.name : null,
           role_id: ipr.role ? ipr.role.role_id : null,
+          permissions:
+            ipr.role?.permissions?.map((p) => ({
+              permission_id: p.permission_id,
+              action: p.action,
+              resource: p.resource,
+            })) || [],
           internal_node: ipr.internalNode
             ? {
                 internal_node_id: ipr.internalNode.internal_node_id,

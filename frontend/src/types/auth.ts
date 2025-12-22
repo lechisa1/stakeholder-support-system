@@ -32,6 +32,12 @@ export interface User {
       name: string;
     } | null;
   }[];
+  permissions: Permissions[];
+}
+
+export interface Permissions {
+  resource: string;
+  action: string;
 }
 
 export interface AuthResponse {

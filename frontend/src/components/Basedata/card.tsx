@@ -1,10 +1,12 @@
 import React from "react";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface InfoCardProps {
   title: string;
   description: string;
   icon?: React.ReactNode;
   buttonText?: string;
+  permission?: string[];
   onClick?: () => void;
 }
 
@@ -12,13 +14,25 @@ const InfoCard: React.FC<InfoCardProps> = ({
   title,
   description,
   icon,
+  permission,
   buttonText = "View",
   onClick,
 }) => {
+  const { hasAnyPermission } = useAuth();
+
+  // console.log("logged user: ", user);
+
+  // If permission is passed and user does NOT have it, don't render
+  if (permission && !hasAnyPermission(permission)) {
+    return null;
+  }
+
   return (
     <div className="flex gap-5 shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gradient-to-b from-[#F9FBFC] to-[#EFF6FB] rounded-[35px] justify-between items-center p-4 bg-white  border border-gray-200 dark:bg-gray-800 dark:border-gray-700 w-full ">
       <div className="flex items-center gap-5">
-        {icon && <div className="text-blue-600 dark:text-blue-400 ">{icon}</div>}
+        {icon && (
+          <div className="text-blue-600 dark:text-blue-400 ">{icon}</div>
+        )}
         <div className="flex-1 ">
           <h3 className="text-lg font-semibold mb-1 text-black dark:text-gray-100">
             {title}

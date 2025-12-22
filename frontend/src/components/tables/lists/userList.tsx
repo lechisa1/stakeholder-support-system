@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Eye, Edit, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
 
 import { Button } from "../../ui/cn/button";
 import { PageLayout } from "../../common/PageLayout";
@@ -11,11 +10,7 @@ import { DataTable } from "../../common/CommonTable";
 import { ActionButton, FilterField } from "../../../types/layout";
 import { CreateUserModal } from "../../modals/CreateUserModal";
 
-import {
-  useGetUsersQuery,
-  useDeleteUserMutation,
-  User,
-} from "../../../redux/services/userApi";
+import { useGetUsersQuery, User } from "../../../redux/services/userApi";
 import { useAuth } from "../../../contexts/AuthContext";
 import { getUserPositionId } from "../../../utils/helper/userPosition";
 
@@ -93,16 +88,6 @@ export default function UserList({
       header: "Actions",
       cell: ({ row }: any) => {
         const user = row.original as User;
-        const [deleteUser] = useDeleteUserMutation();
-
-        const handleDelete = async () => {
-          try {
-            await deleteUser(user.user_id).unwrap();
-            toast.success("User deleted successfully!");
-          } catch (err: any) {
-            toast.error(err?.data?.message || "Failed to delete user");
-          }
-        };
 
         return (
           <div className="flex items-center space-x-2">
@@ -185,6 +170,7 @@ export default function UserList({
       variant: "default",
       size: "default",
       onClick: () => setModalOpen(true),
+      permissions: ["USERS:CREATE"],
     },
   ];
 

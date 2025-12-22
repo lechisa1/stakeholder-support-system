@@ -20,6 +20,7 @@ import { CreateChildInternalNodeModal } from "../../components/modals/CreateChil
 import InternalNodeUsersList from "../../components/tables/lists/InternalNodeUsersList";
 import InternalNodeUsersListConfig from "../../components/tables/lists/InternalNodeUsersListConfig";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
+import { ComponentGuard } from "../../components/common/ComponentGuard";
 
 const IssueConfigurationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -106,12 +107,17 @@ const IssueConfigurationDetail = () => {
               ]}
             />
             <div className="flex justify-center items-end gap-4">
-              <span>
-                <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
-              </span>
-              <span>
-                <Trash2 className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold" />
-              </span>
+              <ComponentGuard permissions={["REQUEST_FLOWS:UPDATE"]}>
+                <span>
+                  <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                </span>
+              </ComponentGuard>
+
+              <ComponentGuard permissions={["REQUEST_FLOWS:DELETE"]}>
+                <span>
+                  <Trash2 className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold" />
+                </span>
+              </ComponentGuard>
             </div>
           </div>
 
@@ -156,17 +162,19 @@ const IssueConfigurationDetail = () => {
                   </div>
                 </>
 
-                <Button
-                  variant="default"
-                  size="default"
-                  onClick={() => setModalOpen(true)}
-                  className="flex items-center space-x-2"
-                >
-                  <span className="h-4 w-4">
-                    <Plus className="h-4 w-4" />
-                  </span>
-                  <span>Add Child</span>
-                </Button>
+                <ComponentGuard permissions={["REQUEST_FLOWS:CREATE"]}>
+                  <Button
+                    variant="default"
+                    size="default"
+                    onClick={() => setModalOpen(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <span className="h-4 w-4">
+                      <Plus className="h-4 w-4" />
+                    </span>
+                    <span>Add Child</span>
+                  </Button>
+                </ComponentGuard>
               </div>
 
               {/* Details - Horizontal Compact Layout */}

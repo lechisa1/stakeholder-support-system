@@ -28,34 +28,40 @@ module.exports = (sequelize, DataTypes) => {
   Institute.init(
     {
       institute_id: {
-        type: DataTypes.CHAR(36),
+        type: DataTypes.UUIDV4,
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
         allowNull: false,
       },
+      // name: {
+      //   type: DataTypes.JSON,
+      //   allowNull: false,
+      //   comment: "Localized names JSON: { en: 'Name', am: 'እትም', fr: 'Nom' }",
+      //   unique: false,
+      //   get() {
+      //     const raw = this.getDataValue("name");
+      //     return raw;
+      //   },
+      //   set(value) {
+      //     if (typeof value === "string") {
+      //       this.setDataValue("name", { en: value });
+      //     } else if (typeof value === "object" && value !== null) {
+      //       // unwrap nested 'en'
+      //       let nameValue = value;
+      //       while (nameValue.en && typeof nameValue.en === "object") {
+      //         nameValue = nameValue.en;
+      //       }
+      //       this.setDataValue("name", { en: nameValue.en || nameValue });
+      //     } else {
+      //       this.setDataValue("name", value);
+      //     }
+      //   },
+      // },
+
       name: {
-        type: DataTypes.JSON,
+        type: DataTypes.CHAR(255),
         allowNull: false,
-        comment: "Localized names JSON: { en: 'Name', am: 'እትም', fr: 'Nom' }",
         unique: false,
-        get() {
-          const raw = this.getDataValue("name");
-          return raw;
-        },
-        set(value) {
-          if (typeof value === "string") {
-            this.setDataValue("name", { en: value });
-          } else if (typeof value === "object" && value !== null) {
-            // unwrap nested 'en'
-            let nameValue = value;
-            while (nameValue.en && typeof nameValue.en === "object") {
-              nameValue = nameValue.en;
-            }
-            this.setDataValue("name", { en: nameValue.en || nameValue });
-          } else {
-            this.setDataValue("name", value);
-          }
-        },
       },
 
       description: {

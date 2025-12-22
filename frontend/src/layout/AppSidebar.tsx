@@ -33,32 +33,35 @@ const AppSidebar: React.FC = () => {
 
   // Filter menu items based on permissions
   const filterMenuItems = (items: NavItem[]) => {
-    return items.filter((item) => {
-      // Check main item permission
-      if (item.permission && !hasAnyPermission(item.permission)) {
-        return false;
-      }
-      if (item.anyPermissions && !hasAnyPermission(item.anyPermissions)) {
-        return false;
-      }
+    return items
+      .map((item) => {
+        // Check main item permission
+        if (item.permission && !hasAnyPermission(item.permission)) {
+          return null;
+        }
+        if (item.anyPermissions && !hasAnyPermission(item.anyPermissions)) {
+          return null;
+        }
 
-      // Filter subitems
-      if (item.subItems) {
-        item.subItems = item.subItems.filter((subItem) => {
-          if (subItem.permission && !hasAnyPermission(subItem.permission)) {
+        // Handle subitems
+        let newSubItems = item.subItems?.filter((sub) => {
+          if (sub.permission && !hasAnyPermission(sub.permission)) {
             return false;
           }
           return true;
         });
 
-        // Remove main item if no subitems remain
-        if (item.subItems.length === 0) {
-          return false;
+        // If no subitems left, hide parent
+        if (item.subItems && (!newSubItems || newSubItems.length === 0)) {
+          return null;
         }
-      }
 
-      return true;
-    });
+        return {
+          ...item,
+          subItems: newSubItems,
+        };
+      })
+      .filter((item) => item !== null) as NavItem[];
   };
 
   useEffect(() => {

@@ -22,6 +22,7 @@ export const navItems: NavItem[] = [
     name: "Dashboard",
     path: "/dashboard",
     allowedFor: ["internal_user", "external_user"],
+    permission: ["DASHBOARD:VIEW"],
   },
 
   // Shared parent but sub routes restricted
@@ -35,18 +36,22 @@ export const navItems: NavItem[] = [
         name: "User List",
         path: "/users",
         allowedFor: ["internal_user", "external_user"],
+        permission: ["USERS:READ"],
       },
       {
         name: "Role Management",
         path: "/role",
         allowedFor: ["internal_user"],
+        permission: ["ROLES:READ"],
       },
       {
         name: "Permission Management",
         path: "/permission",
         allowedFor: ["internal_user"],
+        permission: ["PERMISSIONS:READ"],
       },
     ],
+    anyPermissions: ["USERS:READ", "OLES:READ", "PERMISSIONS:READ"],
   },
 
   // internal_user Only
@@ -55,6 +60,7 @@ export const navItems: NavItem[] = [
     name: "Organization Management",
     path: "/inistitutes",
     allowedFor: ["internal_user"],
+    // permission: ["ORGANIZATIONS:READ"],
   },
 
   // External_user Only
@@ -63,6 +69,7 @@ export const navItems: NavItem[] = [
     name: "Projects",
     path: "/project",
     allowedFor: ["external_user"],
+    // permission: ["PROJECTS:READ"],
   },
 
   {
@@ -70,6 +77,12 @@ export const navItems: NavItem[] = [
     name: "BaseData",
     path: "/basedata",
     allowedFor: ["internal_user"],
+    anyPermissions: [
+      "REQUEST_CATEGORIES:READ",
+      "REQUEST_PRIORITIES:READ",
+      "REQUEST_FLOWS:READ",
+      "HUMAN_RESOURCES:READ",
+    ],
   },
 
   {
@@ -105,6 +118,7 @@ export const navItems: NavItem[] = [
         name: "Organization Profile",
         path: "/organization_profile",
         allowedFor: ["external_user", "internal_user"],
+        // permission: ["ORGANIZATION:UPDATE"],
       },
       {
         name: "Settings",

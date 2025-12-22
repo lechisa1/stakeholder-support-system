@@ -104,6 +104,7 @@ export default function IssueCategoryList() {
       variant: "default",
       size: "default",
       onClick: () => setModalOpen(true),
+      permissions: ["REQUEST_CATEGORIES:CREATE"],
     },
   ];
 

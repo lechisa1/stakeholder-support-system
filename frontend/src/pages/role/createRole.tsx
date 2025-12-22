@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "../../components/ui/cn/select";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface Permission {
   permission_id: string;
@@ -62,8 +63,10 @@ interface PermissionMatrix {
 
 export default function CreateRole() {
   const { id } = useParams<{ id?: string }>();
+  const { hasAnyPermission } = useAuth();
   const location = useLocation();
   const isEditMode = Boolean(id && id !== "create");
+  const updatePermission = hasAnyPermission(["ROLES:UPDATE", "ROLES:CREATE"]);
   // role_type
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -85,12 +88,12 @@ export default function CreateRole() {
   } = useGetRoleByIdQuery(id!, { skip: !isEditMode });
 
   const role = roleData?.data;
-  
+
   // Set dynamic breadcrumb title when in edit mode
   // Pass the role name when available, or pass undefined (which won't clear if we're still loading)
   // Only pass null when we're definitely not in edit mode to clear the breadcrumb
   useBreadcrumbTitleEffect(
-    isEditMode ? (role?.name || undefined) : null, 
+    isEditMode ? role?.name || undefined : null,
     isEditMode && id ? id : undefined
   );
 
@@ -400,7 +403,6 @@ export default function CreateRole() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-3 gap-4">
-                    
                     <div className="space-y-2 flex col-span-1 flex-col gap-2">
                       <Label
                         htmlFor="name"
@@ -417,8 +419,8 @@ export default function CreateRole() {
                         className="w-full h-11 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
                       />
                     </div>
-                      {/* Role Type Dropdown */}
-                      <div className="space-y-2 flex col-span-1 flex-col gap-2">
+                    {/* Role Type Dropdown */}
+                    <div className="space-y-2 flex col-span-1 flex-col gap-2">
                       <Label
                         htmlFor="role_type"
                         className="text-sm font-medium text-[#094C81]"
@@ -463,7 +465,6 @@ export default function CreateRole() {
                         className="w-full h-11 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
                       />
                     </div>
-                  
                   </div>
                 </CardContent>
               </Card>
@@ -525,11 +526,20 @@ export default function CreateRole() {
                                   onClick={() => toggleResource(group.resource)}
                                   className="p-1 hover:bg-gray-200 rounded"
                                 >
-                                  
                                   {isExpanded ? (
-                                    <ChevronDown onClick={() => toggleResource(group.resource)} className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer" />
+                                    <ChevronDown
+                                      onClick={() =>
+                                        toggleResource(group.resource)
+                                      }
+                                      className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer"
+                                    />
                                   ) : (
-                                    <ChevronRight onClick={() => toggleResource(group.resource)} className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer" />
+                                    <ChevronRight
+                                      onClick={() =>
+                                        toggleResource(group.resource)
+                                      }
+                                      className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer"
+                                    />
                                   )}
                                 </button>
                                 <div className="p-2 text-[#094C81] bg-white rounded-lg shadow-sm">
@@ -649,43 +659,45 @@ export default function CreateRole() {
             </div>
 
             {/* Footer Actions */}
-            <div className="border-t border-gray-200  p-6">
-              <div className="flex items-center justify-end">
-                <div className="flex items-center space-x-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="min-w-[150px] text-[#094C81] text-base bg-gray-200 hover:bg-gray-300"
-                    onClick={() => {
-                      navigate("/role");
-                    }}
-                    disabled={isLoading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={
-                      isLoading ||
-                      !name.trim() ||
-                      getSelectedPermissions().length === 0
-                    }
-                    className="min-w-[150px] text-base bg-[#094C81] hover:bg-[#073954]"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        {isEditMode ? "Updating..." : "Creating..."}
-                      </>
-                    ) : isEditMode ? (
-                      "Update"
-                    ) : (
-                      "Create"
-                    )}
-                  </Button>
+            {updatePermission && (
+              <div className="border-t border-gray-200  p-6">
+                <div className="flex items-center justify-end">
+                  <div className="flex items-center space-x-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-w-[150px] text-[#094C81] text-base bg-gray-200 hover:bg-gray-300"
+                      onClick={() => {
+                        navigate("/role");
+                      }}
+                      disabled={isLoading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={
+                        isLoading ||
+                        !name.trim() ||
+                        getSelectedPermissions().length === 0
+                      }
+                      className="min-w-[150px] text-base bg-[#094C81] hover:bg-[#073954]"
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          {isEditMode ? "Updating..." : "Creating..."}
+                        </>
+                      ) : isEditMode ? (
+                        "Update"
+                      ) : (
+                        "Create"
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </form>
         </div>
       </div>

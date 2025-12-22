@@ -12,7 +12,8 @@ import {
 } from "../../../redux/services/issuePriorityApi";
 import { CreatePriorityModal } from "../../modals/CreatePriorityModal";
 import DeleteModal from "../../common/DeleteModal";
-
+import { ComponentGuard } from "../../common/ComponentGuard";
+import { useAuth } from "../../../contexts/AuthContext";
 
 export default function IssuePriorityList() {
   const [response, setResponse] = useState<any[]>([]);
@@ -24,83 +25,140 @@ export default function IssuePriorityList() {
     pageCount: 1,
     pageSize: 10,
   });
-  const [deletePriority,{isLoading: isDeleteLoading}] = useDeleteIssuePriorityMutation();
+  const [deletePriority, { isLoading: isDeleteLoading }] =
+    useDeleteIssuePriorityMutation();
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletePriorityId, setDeletePriorityId] = useState<string>("");
+  const { hasAnyPermission } = useAuth();
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [editPriorityId, setEditPriorityId] = useState<string>("");
-// --- Define table columns ---
-const PriorityTableColumns = [
-  {
-    accessorKey: "name",
-    header: "Priority Name",
-    cell: ({ row }: any) => (
-      <div className="font-medium text-blue-600">{row.getValue("name")}</div>
-    ),
-  },
-  {
-    accessorKey: "description",
-    header: "Description",
-    cell: ({ row }: any) => <div>{row.getValue("description") || "N/A"}</div>,
-  },
-  {
-    accessorKey: "response_time",
-    header: "Response Time",
-    cell: ({ row }: any) => <div>{row.getValue("response_time") || "N/A"}</div>,
-  },
-  {
-    accessorKey: "Escalate to Admin",
-    header: "Escalate to Admin",
-    cell: ({ row }: any) => <div>{row.getValue("is_active") ? "Yes" : "No"}</div>,
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }: any) => {
-      const priority = row.original;
+  const hasPermission = hasAnyPermission([
+    "REQUEST_PRIORITIES:UPDATE",
+    "REQUEST_PRIORITIES:DELETE",
+  ]);
 
-      return (
-        <div className="flex items-center space-x-2">
-          {/* show button to view priority
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            // onClick={() => openViewModal(priority)}
-          >
-            <Eye className="h-4 w-4" />
-          </Button> */}
-          {/* Edit button */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={() => {
-              setEditPriorityId(priority.priority_id);
-              setEditModalOpen(true);
-            }}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
+  // Helper function to format response time
+  const formatResponseTime = (duration: number, unit: string) => {
+    if (!duration) return "N/A";
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-            onClick={() => {
-              setDeleteModalOpen(true);
-              setDeletePriorityId(priority.priority_id);
-              console.log("deletePriorityId", deletePriorityId);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+    const unitMap: Record<string, string> = {
+      hour: "hour(s)",
+      day: "day(s)",
+      week: "week(s)",
+      month: "month(s)",
+    };
 
-        </div>
-      );
+    const formattedUnit = unitMap[unit] || unit;
+    return `${duration} ${formattedUnit}`;
+  };
+
+  // --- Define table columns ---
+  const PriorityTableColumns = [
+    {
+      accessorKey: "name",
+      header: "Priority Name",
+      cell: ({ row }: any) => (
+        <div className="font-medium text-blue-600">{row.getValue("name")}</div>
+      ),
     },
-  },
-];
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: ({ row }: any) => (
+        <div className="text-gray-600">
+          {row.getValue("description") || "N/A"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "color_value",
+      header: "Color",
+      cell: ({ row }: any) => {
+        const color = row.getValue("color_value");
+        return (
+          <div className="flex items-center gap-2">
+            <div
+              className="w-4 h-4 rounded-full border border-gray-300"
+              style={{ backgroundColor: color }}
+            />
+            <span className="text-sm text-gray-600">{color}</span>
+          </div>
+        );
+      },
+    },
+    {
+      id: "response_time",
+      header: "Response Time",
+      cell: ({ row }: any) => {
+        const priority = row.original;
+        return (
+          <div className="font-medium">
+            {formatResponseTime(
+              priority.response_duration,
+              priority.response_unit
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "is_active",
+      header: "Escalate to Admin",
+      cell: ({ row }: any) => (
+        <div className="flex items-center">
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              row.getValue("is_active")
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            {row.getValue("is_active") ? "Active" : "Inactive"}
+          </span>
+        </div>
+      ),
+    },
+    hasPermission && {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }: any) => {
+        const priority = row.original;
+
+        return (
+          <div className="flex items-center space-x-2">
+            <ComponentGuard permissions={["REQUEST_PRIORITIES:UPDATE"]}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => {
+                  setEditPriorityId(priority.priority_id);
+                  setEditModalOpen(true);
+                }}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </ComponentGuard>
+            <ComponentGuard permissions={["REQUEST_PRIORITIES:DELETE"]}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:border-red-300"
+                onClick={() => {
+                  setDeleteModalOpen(true);
+                  setDeletePriorityId(priority.priority_id);
+                }}
+                disabled={!priority.is_active}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </ComponentGuard>
+          </div>
+        );
+      },
+    },
+  ].filter(Boolean);
+
   const { data, isLoading, isError } = useGetIssuePrioritiesQuery();
 
   const actions: ActionButton[] = [
@@ -109,6 +167,7 @@ const PriorityTableColumns = [
       icon: <Plus className="h-4 w-4" />,
       variant: "default",
       size: "default",
+      permissions: ["REQUEST_PRIORITIES:CREATE"],
       onClick: () => setModalOpen(true),
     },
   ];
@@ -119,6 +178,7 @@ const PriorityTableColumns = [
       label: "Status",
       type: "multiselect",
       options: [
+        { label: "All", value: "all" },
         { label: "Active", value: "ACTIVE" },
         { label: "Inactive", value: "INACTIVE" },
       ],
@@ -128,7 +188,7 @@ const PriorityTableColumns = [
         setPageDetail({ ...pageDetail, pageIndex: 0 });
       },
     },
-  ]; // Add filters if needed
+  ];
 
   useEffect(() => {
     if (!isError && !isLoading && data) {
@@ -136,6 +196,12 @@ const PriorityTableColumns = [
       const priorities = Array.isArray(data) ? data : (data as any)?.data || [];
       setResponse(priorities);
       setFilteredResponse(priorities);
+
+      // Update page count based on filtered data
+      setPageDetail((prev) => ({
+        ...prev,
+        pageCount: Math.ceil(priorities.length / prev.pageSize),
+      }));
     }
   }, [data, isError, isLoading]);
 
@@ -147,6 +213,12 @@ const PriorityTableColumns = [
       return true;
     });
     setFilteredResponse(filtered);
+
+    // Update page count
+    setPageDetail((prev) => ({
+      ...prev,
+      pageCount: Math.ceil(filtered.length / prev.pageSize),
+    }));
   }, [response, statusFilter]);
 
   const handlePagination = (index: number, size: number) => {
@@ -154,14 +226,19 @@ const PriorityTableColumns = [
       ...pageDetail,
       pageIndex: index,
       pageSize: size,
+      pageCount: Math.ceil(filteredResponse.length / size),
     });
   };
-  // Optional: filter by name or other criteria
-  // const [searchTerm, setSearchTerm] = useState("");
-  // useEffect(() => {
-  //   const filtered = response.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  //   setFilteredResponse(filtered);
-  // }, [response, searchTerm]);
+
+  const handleDelete = async () => {
+    try {
+      await deletePriority(deletePriorityId).unwrap();
+      setDeleteModalOpen(false);
+      // You might want to refetch data here or update local state
+    } catch (error) {
+      console.error("Failed to delete priority:", error);
+    }
+  };
 
   return (
     <>
@@ -170,7 +247,7 @@ const PriorityTableColumns = [
         filterColumnsPerRow={1}
         actions={actions}
         title="Request Priority List"
-        description="List of all request priorities"
+        description="List of all request priorities with their response times"
       >
         <DataTable
           columns={PriorityTableColumns}
@@ -186,6 +263,7 @@ const PriorityTableColumns = [
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
       />
+      {/* Uncomment when you have the EditPriorityModal component */}
       {/* <EditPriorityModal
         isOpen={isEditModalOpen}
         onClose={() => {
@@ -197,11 +275,9 @@ const PriorityTableColumns = [
       <DeleteModal
         message="Are you sure you want to delete this priority?"
         onCancel={() => setDeleteModalOpen(false)}
-        onDelete={() => {deletePriority(deletePriorityId).unwrap()
-          setDeleteModalOpen(false);}
-        }
+        onDelete={handleDelete}
         open={isDeleteModalOpen}
-        isLoading={isDeleteLoading || isLoading}
+        isLoading={isDeleteLoading}
       />
     </>
   );
