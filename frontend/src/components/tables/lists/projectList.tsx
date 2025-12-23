@@ -113,7 +113,6 @@ export default function ProjectList({
       variant: "default",
       size: "default",
       onClick: () => setModalOpen(true),
-      // permissions: ["create:projects"],
       allowedFor: ["internal_user"],
       permissions: ["PROJECTS:CREATE"],
     },

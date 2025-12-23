@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../select";
+import { Card } from "../../card";
 
 export const description = "An interactive pie chart";
 
@@ -71,7 +72,7 @@ export function ChartPieInteractive() {
   const months = React.useMemo(() => desktopData.map((item) => item.month), []);
 
   return (
-    <div data-chart={id} className="flex flex-col space-y-4">
+    <Card data-chart={id} className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col space-y-4 p-6">
       <ChartStyle id={id} config={chartConfig} />
       <div className="flex items-center justify-between">
         <div className="grid gap-1">
@@ -191,6 +192,6 @@ export function ChartPieInteractive() {
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

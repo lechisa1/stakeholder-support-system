@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Clock } from "lucide-react";
+import { ArrowRightLeft } from "lucide-react";
 
 interface TimelineOpenerProps {
   onOpen: () => void;
@@ -30,28 +30,8 @@ export default function TimelineOpener({ onOpen }: TimelineOpenerProps) {
           ease: "easeInOut",
         }}
       >
-        <Clock size={22} className="text-blue-600" />
+        <ArrowRightLeft size={22} className="text-blue-600" />
       </motion.div>
-
-      {/* Animated pointer UNTIL clicked */}
-      {!clicked && (
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{
-            opacity: [0, 1, 1, 0],
-            x: [0, -5, 0],
-            scale: [1, 1.15, 1],
-          }}
-          transition={{
-            duration: 1.4,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute left-[-38px] top-1/2 -translate-y-1/2 text-blue-500 text-xl"
-        >
-          👉
-        </motion.div>
-      )}
     </div>
   );
 }

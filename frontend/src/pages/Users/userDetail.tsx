@@ -471,7 +471,7 @@ const UserDetail = () => {
                 </>
               ) : (
                 <>
-                  <ComponentGuard permissions={["USERS:UPDATE", ""]}>
+                  <ComponentGuard permissions={["USERS:UPDATE"]}>
                     <button
                       onClick={handleEditClick}
                       className="flex items-center gap-2 px-2 py-2 text-[#094C81] hover:bg-gray-100 hover:text-[#073954] cursor-pointer rounded-lg transition-colors"

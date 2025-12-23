@@ -27,6 +27,7 @@ const {
 } = require("../../models");
 const { Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
 
 // ================================
 // CREATE ISSUE (with optional attachments)
@@ -50,11 +51,15 @@ const createIssue = async (req, res) => {
       attachment_ids, // optional array of attachment IDs
     } = req.body;
 
+    // Generate ticket number in controller
+    const ticket_number = await generateTicket();
+
     const issue_id = uuidv4();
 
     const issue = await Issue.create(
       {
         issue_id,
+        ticket_number,
         project_id: project_id || null,
         title,
         description,
@@ -1491,4 +1496,41 @@ const getDirectChildNodeIds = async (nodeId, HierarchyNode) => {
   });
 
   return childNodes.map((n) => n.hierarchy_node_id);
+};
+
+// Helper function to generate ticket number - FIXED VERSION
+const generateTicket = async () => {
+  const crypto = require("crypto");
+  const year = new Date().getFullYear().toString().slice(-2);
+
+  // Use a while loop with a safety limit to prevent infinite loops
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  while (attempts < maxAttempts) {
+    const randomCode = crypto.randomBytes(3).toString("hex").toUpperCase();
+    const ticket = `TICK-${year}-${randomCode}`;
+
+    // Check if ticket exists in database
+    try {
+      const existing = await Issue.findOne({
+        where: { ticket_number: ticket },
+      });
+
+      if (!existing) {
+        return ticket; // Return the unique ticket
+      }
+    } catch (error) {
+      // If there's an error checking, generate a new one
+      console.warn("Error checking ticket uniqueness:", error.message);
+    }
+
+    attempts++;
+  }
+
+  // If we can't find a unique ticket after max attempts,
+  // generate one with a timestamp to ensure uniqueness
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomCode = crypto.randomBytes(2).toString("hex").toUpperCase();
+  return `TICK-${year}-${timestamp}-${randomCode}`;
 };

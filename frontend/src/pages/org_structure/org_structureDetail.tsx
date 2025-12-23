@@ -20,6 +20,7 @@ import { Button } from "../../components/ui/cn/button";
 import { useState } from "react";
 import { CreateChildHierarchyNodeModal } from "../../components/modals/CreateChildHierarchyNodeModal";
 import HierarchyUsersList from "../../components/tables/lists/HierarchyUsersList";
+import { ComponentGuard } from "../../components/common/ComponentGuard";
 
 const OrgStructureDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -107,12 +108,16 @@ const OrgStructureDetail = () => {
               ]}
             />
             <div className="flex justify-center items-end gap-4">
-              <span>
-                <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
-              </span>
-              <span>
-                <Trash2 className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold" />
-              </span>
+              <ComponentGuard permissions={["PROJECT_STRUCTURES:UPDATE"]}>
+                <span>
+                  <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                </span>
+              </ComponentGuard>
+              <ComponentGuard permissions={["PROJECT_STRUCTURES:DELETE"]}>
+                <span>
+                  <Trash2 className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold" />
+                </span>
+              </ComponentGuard>
             </div>
           </div>
 
@@ -156,18 +161,19 @@ const OrgStructureDetail = () => {
                     </div>
                   </div>
                 </>
-
-                <Button
-                  variant="default"
-                  size="default"
-                  onClick={() => setModalOpen(true)}
-                  className="flex items-center space-x-2"
-                >
-                  <span className="h-4 w-4">
-                    <Plus className="h-4 w-4" />
-                  </span>
-                  <span>Add Child</span>
-                </Button>
+                <ComponentGuard permissions={["PROJECT_STRUCTURES:CREATE"]}>
+                  <Button
+                    variant="default"
+                    size="default"
+                    onClick={() => setModalOpen(true)}
+                    className="flex items-center space-x-2"
+                  >
+                    <span className="h-4 w-4">
+                      <Plus className="h-4 w-4" />
+                    </span>
+                    <span>Add Child</span>
+                  </Button>
+                </ComponentGuard>
               </div>
 
               {/* Details - Horizontal Compact Layout */}

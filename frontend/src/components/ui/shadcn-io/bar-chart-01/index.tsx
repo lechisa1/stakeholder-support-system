@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../select";
+import { Card } from "../../card";
 
 export const description = "An interactive bar chart";
 
@@ -80,7 +81,7 @@ export function ChartBarInteractive() {
   );
 
   return (
-    <div className="w-full h-full flex flex-col p-4">
+    <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
       <div className="flex flex-col items-stretch border-b pb-4 mb-4 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1">
           <h3 className="text-lg font-semibold">Bar Chart - Interactive</h3>
@@ -166,6 +167,6 @@ export function ChartBarInteractive() {
           </BarChart>
         </ChartContainer>
       </div>
-    </div>
+    </Card>
   );
 }

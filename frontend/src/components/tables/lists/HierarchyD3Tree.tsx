@@ -8,6 +8,7 @@ import { useParams } from "react-router-dom";
 import { shortenText } from "../../../utils/shortenText";
 import { useGetUsersAssignedToProjectQuery } from "../../../redux/services/userApi";
 import AssignUserModal from "../../modals/AssignUserToProjectModal";
+import { ComponentGuard } from "../../common/ComponentGuard";
 
 // ---------------------------
 // Types
@@ -107,7 +108,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({
     window.location.href = `/org_structure/${nodeDatum.attributes.hierarchy_node_id}`;
   };
 
-
   const handleMouseEnter = () => setHovered(true);
   const handleMouseLeave = () => setHovered(false);
 
@@ -169,32 +169,31 @@ const CustomNode: React.FC<CustomNodeProps> = ({
             >
               Details
             </button>
-            <button
-              onClick={() => {
-                setSelectedParentNodeId(
-                  nodeDatum.attributes.hierarchy_node_id
-                );
-                setModalOpen(true);
-              }}
-              className="flex-1 bg-[#094C81] hover:bg-[#073954] text-white font-semibold py-2 rounded-lg transition-colors duration-200 text-xs"
-            >
-              Add Child
-            </button>
-            
-          </div>
-          <button
-              onClick={
-                () => {
+            <ComponentGuard permissions={["PROJECT_STRUCTURES:CREATE"]}>
+              <button
+                onClick={() => {
                   setSelectedParentNodeId(
                     nodeDatum.attributes.hierarchy_node_id
                   );
-                  setIsAssignUsersModalOpen(true);
-                }
-              }
+                  setModalOpen(true);
+                }}
+                className="flex-1 bg-[#094C81] hover:bg-[#073954] text-white font-semibold py-2 rounded-lg transition-colors duration-200 text-xs"
+              >
+                Add Child
+              </button>
+            </ComponentGuard>
+          </div>
+          <ComponentGuard permissions={["PROJECT_STRUCTURES:ASSIGN_USERS"]}>
+            <button
+              onClick={() => {
+                setSelectedParentNodeId(nodeDatum.attributes.hierarchy_node_id);
+                setIsAssignUsersModalOpen(true);
+              }}
               className="flex-1 bg-[#094C81] mt-2 hover:bg-[#073954] text-white font-semibold py-2 rounded-lg transition-colors duration-200 text-xs"
             >
               Assign Users
             </button>
+          </ComponentGuard>
         </div>
       </foreignObject>
 
@@ -219,13 +218,13 @@ const CustomNode: React.FC<CustomNodeProps> = ({
             </p>
             <ul className="text-sm text-gray-700 mt-2 space-y-1">
               {assignedUsers.map((fullName) => (
-               <li
-               key={fullName}
-               className="flex items-center gap-2 text-gray-800 text-sm"
-             >
-               <span className="w-2 h-2 bg-[#094C81] rounded-full"></span>
-               {fullName}
-             </li>
+                <li
+                  key={fullName}
+                  className="flex items-center gap-2 text-gray-800 text-sm"
+                >
+                  <span className="w-2 h-2 bg-[#094C81] rounded-full"></span>
+                  {fullName}
+                </li>
               ))}
             </ul>
           </div>
@@ -435,9 +434,10 @@ const HierarchyD3Tree: React.FC<HierarchyD3TreeProps> = ({
                 enableLegacyTransitions
                 transitionDuration={300}
                 renderCustomNodeElement={(rd3tProps) => {
-                  const nodeDatum = rd3tProps.nodeDatum as unknown as D3TreeNode & {
-                    __rd3t?: { collapsed?: boolean };
-                  };
+                  const nodeDatum =
+                    rd3tProps.nodeDatum as unknown as D3TreeNode & {
+                      __rd3t?: { collapsed?: boolean };
+                    };
                   const assignedUsers =
                     hierarchyNodeUsersMap[
                       nodeDatum.attributes.hierarchy_node_id
@@ -480,7 +480,6 @@ const HierarchyD3Tree: React.FC<HierarchyD3TreeProps> = ({
           setModalOpen(false);
           setSelectedParentNodeId(null);
         }}
-
       />
       <AssignUserModal
         inistitute_id={inistitute_id}

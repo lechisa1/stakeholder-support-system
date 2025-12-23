@@ -1,12 +1,5 @@
 "use strict";
 const { Model } = require("sequelize");
-const crypto = require("crypto");
-
-const generateTicket = () => {
-  const year = new Date().getFullYear().toString().slice(-2);
-  const randomCode = crypto.randomBytes(3).toString("hex").toUpperCase();
-  return `TICK-${year}-${randomCode}`;
-};
 
 module.exports = (sequelize, DataTypes) => {
   class Issue extends Model {
@@ -183,25 +176,6 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: true,
       createdAt: "created_at",
       updatedAt: "updated_at",
-      hooks: {
-        beforeCreate: async (issue) => {
-          if (!issue.ticket_number || issue.ticket_number === "") {
-            let ticket;
-            let exists = true;
-
-            // Keep generating until unique
-            while (exists) {
-              ticket = generateTicket();
-              const existing = await Issue.findOne({
-                where: { ticket_number: ticket },
-              });
-              exists = !!existing;
-            }
-
-            issue.ticket_number = ticket;
-          }
-        },
-      },
     }
   );
 

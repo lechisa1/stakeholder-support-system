@@ -39,12 +39,15 @@ module.exports = {
       { resource: "projects", action: "update" },
       { resource: "projects", action: "delete" },
       { resource: "projects", action: "assign_users" },
+      { resource: "projects", action: "remove_users" },
 
       // Project Structure (External)
       { resource: "project_structures", action: "create" },
       { resource: "project_structures", action: "read" },
       { resource: "project_structures", action: "update" },
       { resource: "project_structures", action: "delete" },
+      { resource: "project_structures", action: "assign_users" },
+      { resource: "project_structures", action: "remove_users" },
 
       // Support Request Management
       { resource: "request", action: "create" },
@@ -55,6 +58,9 @@ module.exports = {
       { resource: "request", action: "accept" },
       { resource: "request", action: "resolve" },
       { resource: "request", action: "escalate" },
+      { resource: "request", action: "confirm" },
+      { resource: "request", action: "reject" },
+      { resource: "request", action: "re_raise" },
       { resource: "request", action: "view_own" },
       { resource: "request", action: "view_all" },
 

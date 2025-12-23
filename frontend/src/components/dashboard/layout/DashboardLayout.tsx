@@ -5,7 +5,7 @@ import PieChart11 from "../charts/PieChart11";
 
 const DashboardLayout = () => {
   return (
-    <div className=" border p-4 gap-10 rounded-xl flex flex-col justify-between  bg-white">
+    <div className="gap-10 rounded-xl flex flex-col justify-between bg-white">
       <div className="grid grid-cols-5 gap-10">
         <div className="col-span-3  ">
           <AreaChart01 />

@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../select";
+import { Card } from "../../card";
 
 export const description = "An interactive area chart";
 
@@ -147,7 +148,7 @@ export function ChartAreaInteractive() {
   });
 
   return (
-    <div className="w-full h-full flex flex-col p-4">
+    <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
       <div className="flex items-center gap-2   pb-4 mb-4 sm:flex-row">
         <div className="grid flex-1 gap-1">
           <h3 className="text-lg font-semibold">Area Chart - Interactive</h3>
@@ -271,6 +272,6 @@ export function ChartAreaInteractive() {
           </AreaChart>
         </ChartContainer>
       </div>
-    </div>
+    </Card>
   );
 }

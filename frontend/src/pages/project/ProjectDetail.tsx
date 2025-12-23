@@ -25,6 +25,8 @@ import ProjectUserList from "../../components/tables/lists/projectUserList";
 import { ActionButton } from "../../types/layout";
 import HierarchyNodeList from "../../components/tables/lists/hierarchyNodeList";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
+import { ComponentGuard } from "../../components/common/ComponentGuard";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -33,26 +35,47 @@ export default function ProjectDetail() {
     useDeleteProjectMutation();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"hierarchy" | "users">(
-    "hierarchy"
-  );
+  const { hasAnyPermission } = useAuth();
 
-  const actions: ActionButton[] = [
-    {
+  // Check permissions for both tabs
+  const hasHierarchyPermission = hasAnyPermission(["PROJECT_STRUCTURES:READ"]);
+  const hasAssignUsersPermission = hasAnyPermission([
+    "PROJECT_STRUCTURES:ASSIGN_USERS",
+    "PROJECT_STRUCTURES:READ",
+  ]);
+
+  // Determine active tab based on permissions
+  const [activeTab, setActiveTab] = useState<"hierarchy" | "users">(() => {
+    // If only one permission exists, default to that tab
+    if (hasHierarchyPermission && !hasAssignUsersPermission) return "hierarchy";
+    if (!hasHierarchyPermission && hasAssignUsersPermission) return "users";
+    // If both exist, default to issueFlow
+    return "hierarchy";
+  });
+
+  const actions: ActionButton[] = [];
+
+  if (hasHierarchyPermission) {
+    actions.push({
       label: "Hierarchy",
       icon: <FolderIcon className="h-4 w-4" />,
       variant: activeTab === "hierarchy" ? "default" : "outline",
       size: "default",
       onClick: () => setActiveTab("hierarchy"),
-    },
-    {
+    });
+  }
+
+  if (hasAssignUsersPermission) {
+    actions.push({
       label: "Assigned Users",
       icon: <Users className="h-4 w-4" />,
       variant: activeTab === "users" ? "default" : "outline",
       size: "default",
       onClick: () => setActiveTab("users"),
-    },
-  ];
+    });
+  }
+
+  const showToggle = actions.length > 1;
 
   const handleDelete = async () => {
     try {
@@ -142,15 +165,19 @@ export default function ProjectDetail() {
               ]}
             />
             <div className="flex justify-center items-end gap-4">
-              <span>
-                <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
-              </span>
-              <span>
-                <Trash2
-                  onClick={() => setIsOpen(true)}
-                  className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold"
-                />
-              </span>
+              <ComponentGuard permissions={["PROJECTS:UPDATE"]}>
+                <span>
+                  <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                </span>
+              </ComponentGuard>
+              <ComponentGuard permissions={["PROJECTS:DELETE"]}>
+                <span>
+                  <Trash2
+                    onClick={() => setIsOpen(true)}
+                    className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold"
+                  />
+                </span>
+              </ComponentGuard>
             </div>
           </div>
 
@@ -251,17 +278,20 @@ export default function ProjectDetail() {
           </Card>
 
           {/* Project Hierarchy */}
-          {activeTab === "hierarchy" && (
+          {hasHierarchyPermission && activeTab === "hierarchy" && (
             <HierarchyNodeList
               project_id={id || ""}
               // use first institute for now
               inistitute_id={project.institutes?.[0]?.institute_id}
-              toggleActions={actions}
+              toggleActions={showToggle ? actions : undefined}
             />
           )}
 
-          {activeTab === "users" && (
-            <ProjectUserList project_id={id || ""} toggleActions={actions} />
+          {hasAssignUsersPermission && activeTab === "users" && (
+            <ProjectUserList
+              project_id={id || ""}
+              toggleActions={showToggle ? actions : undefined}
+            />
           )}
         </div>
       </div>

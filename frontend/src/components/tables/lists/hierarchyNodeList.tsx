@@ -27,26 +27,6 @@ const HierarchyNodeTableColumns = (deleteNode: any) => [
     ),
   },
   {
-    accessorKey: "description",
-    header: "Description",
-    cell: ({ row }: any) => <div>{row.getValue("description") || "N/A"}</div>,
-  },
-  // {
-  //   accessorKey: "project",
-  //   header: "Project",
-  //   cell: ({ row }: any) => {
-  //     const project = row.original.project;
-  //     return (
-  //       <div className="font-medium text-gray-700">
-  //         {project?.name ||
-  //           project?.project_name ||
-  //           project?.project_id ||
-  //           "N/A"}
-  //       </div>
-  //     );
-  //   },
-  // },
-  {
     accessorKey: "parent",
     header: "Parent Structure",
     cell: ({ row }: any) => {
@@ -75,17 +55,6 @@ const HierarchyNodeTableColumns = (deleteNode: any) => [
     header: "Actions",
     cell: ({ row }: any) => {
       const node = row.original;
-
-      const handleDelete = async () => {
-        if (confirm(`Delete node "${node.name}"?`)) {
-          try {
-            await deleteNode(node.hierarchy_node_id).unwrap();
-            toast.success("Hierarchy node deleted successfully");
-          } catch (err: any) {
-            toast.error(err?.data?.message || "Error deleting node");
-          }
-        }
-      };
 
       return (
         <div className="flex items-center space-x-2">
@@ -150,6 +119,7 @@ export default function HierarchyNodeList({
       variant: "default",
       size: "default",
       onClick: () => setModalOpen(true),
+      permissions: ["PROJECT_STRUCTURES:CREATE"],
     },
   ];
 
@@ -212,15 +182,12 @@ export default function HierarchyNodeList({
             currentIndex={pageDetail.pageIndex}
           />
         ) : (
-          <HierarchyD3Tree inistitute_id={inistitute_id} data={filteredNodes} isLoading={isLoading} />
-        )}
-          {/* <HierarchyD3Tree
+          <HierarchyD3Tree
+            inistitute_id={inistitute_id}
             data={filteredNodes}
             isLoading={isLoading}
-            // pass institute for AssignUserModal
-            inistitute_id={inistitute_id}
-          /> */}
-
+          />
+        )}
       </PageLayout>
 
       <CreateHierarchyNodeModal

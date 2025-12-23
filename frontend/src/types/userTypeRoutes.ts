@@ -60,7 +60,7 @@ export const navItems: NavItem[] = [
     name: "Organization Management",
     path: "/inistitutes",
     allowedFor: ["internal_user"],
-    // permission: ["ORGANIZATIONS:READ"],
+    permission: ["ORGANIZATIONS:READ"],
   },
 
   // External_user Only
@@ -69,7 +69,7 @@ export const navItems: NavItem[] = [
     name: "Projects",
     path: "/project",
     allowedFor: ["external_user"],
-    // permission: ["PROJECTS:READ"],
+    permission: ["PROJECTS:READ"],
   },
 
   {
@@ -90,6 +90,7 @@ export const navItems: NavItem[] = [
     name: "My Issue",
     path: "/my_issue",
     allowedFor: ["external_user"],
+    permission: ["REQUEST:VIEW_OWN"],
   },
 
   {
@@ -97,6 +98,7 @@ export const navItems: NavItem[] = [
     name: "Task List",
     path: "/task_list",
     allowedFor: ["internal_user"],
+    permission: ["REQUEST:VIEW_ALL"],
   },
 
   {
@@ -104,6 +106,7 @@ export const navItems: NavItem[] = [
     name: "Task List",
     path: "/task",
     allowedFor: ["external_user"],
+    permission: ["REQUEST:VIEW_ALL"],
   },
   {
     icon: "PlugIcon",
@@ -113,12 +116,13 @@ export const navItems: NavItem[] = [
         name: "Profile",
         path: "/profile",
         allowedFor: ["external_user", "internal_user"],
+        permission: ["PROFILE:UPDATE"],
       },
       {
         name: "Organization Profile",
         path: "/organization_profile",
         allowedFor: ["external_user", "internal_user"],
-        // permission: ["ORGANIZATION:UPDATE"],
+        permission: ["ORGANIZATIONS:UPDATE"],
       },
       {
         name: "Settings",

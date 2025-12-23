@@ -1,14 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Eye, Edit, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { toast } from "sonner";
 
-import {
-  useDeleteHierarchyNodeMutation,
-
-} from "../../../redux/services/hierarchyNodeApi";
+import { useDeleteHierarchyNodeMutation } from "../../../redux/services/hierarchyNodeApi";
 
 import { PageLayout } from "../../common/PageLayout";
 import { DataTable } from "../../common/CommonTable";
@@ -16,7 +10,7 @@ import { ActionButton, FilterField } from "../../../types/layout";
 import { useGetUsersAssignedToProjectQuery } from "../../../redux/services/userApi";
 
 // ------------------- Table Columns -------------------
-const ProjectUserTableColumns = (deleteUser: any) => [
+const ProjectUserTableColumns = () => [
   {
     accessorKey: "user.full_name",
     header: "Full Name",
@@ -63,54 +57,6 @@ const ProjectUserTableColumns = (deleteUser: any) => [
       );
     },
   },
-  //   {
-  //     id: "actions",
-  //     header: "Actions",
-  //     cell: ({ row }: any) => {
-  //       const userAssignment = row.original;
-
-  //       const handleDelete = async () => {
-  //         if (
-  //           confirm(
-  //             `Remove user "${userAssignment.user?.full_name}" from project?`
-  //           )
-  //         ) {
-  //           try {
-  //             // You'll need to implement this mutation or use an existing one
-  //             await deleteUser(userAssignment.project_user_role_id).unwrap();
-  //             toast.success("User removed from project successfully");
-  //           } catch (err: any) {
-  //             toast.error(
-  //               err?.data?.message || "Error removing user from project"
-  //             );
-  //           }
-  //         }
-  //       };
-
-  //       return (
-  //         <div className="flex items-center space-x-2">
-  //           <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
-  //             <Link to={`/users/${userAssignment.user_id}`}>
-  //               <Eye className="h-4 w-4" />
-  //             </Link>
-  //           </Button>
-  //           {/* <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
-  //             <Link to={`/users/${userAssignment.user_id}/edit`}>
-  //               <Edit className="h-4 w-4" />
-  //             </Link>
-  //           </Button>
-  //           <Button
-  //             variant="outline"
-  //             size="sm"
-  //             className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-  //             onClick={handleDelete}
-  //           >
-  //             <Trash2 className="h-4 w-4" />
-  //           </Button> */}
-  //         </div>
-  //       );
-  //     },
-  //   },
 ];
 
 interface ProjectUserListProps {
@@ -126,7 +72,6 @@ export default function ProjectUserList({
   const [users, setUsers] = useState<any[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [isModalOpen, setModalOpen] = useState(false);
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
@@ -139,11 +84,6 @@ export default function ProjectUserList({
       skip: !project_id,
     }
   );
-
-  // You'll need to implement this mutation or use an existing one
-  const [deleteUserAssignment] = useDeleteHierarchyNodeMutation(); // Replace with actual user assignment deletion mutation
-
-  const [toggleView, setToggleView] = useState("table");
 
   const filterFields: FilterField[] = [
     {
@@ -193,32 +133,21 @@ export default function ProjectUserList({
     setPageDetail({ ...pageDetail, pageIndex: index, pageSize: size });
   };
 
-  console.log("toggleView: ", toggleView);
-
   return (
     <>
       <PageLayout
         filters={filterFields}
         filterColumnsPerRow={1}
         toggleActions={toggleActions}
-        onToggle={(value: string) => setToggleView(value)}
       >
-        {toggleView === "table" ? (
-          <DataTable
-            columns={ProjectUserTableColumns(deleteUserAssignment)}
-            data={filteredUsers}
-            handlePagination={handlePagination}
-            tablePageSize={pageDetail.pageSize}
-            totalPageCount={pageDetail.pageCount}
-            currentIndex={pageDetail.pageIndex}
-          />
-        ) : (
-          // You might want to create a different visualization for users
-          // or keep the hierarchy tree if it makes sense for your use case
-          <div className="p-4">
-            <p>User list visualization not implemented yet</p>
-          </div>
-        )}
+        <DataTable
+          columns={ProjectUserTableColumns()}
+          data={filteredUsers}
+          handlePagination={handlePagination}
+          tablePageSize={pageDetail.pageSize}
+          totalPageCount={pageDetail.pageCount}
+          currentIndex={pageDetail.pageIndex}
+        />
       </PageLayout>
     </>
   );

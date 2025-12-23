@@ -35,7 +35,7 @@ export default function UserIssueDetail() {
   const { t } = useTranslation();
   const [modalImageIndex, setModalImageIndex] = useState<number | null>(null);
   const [confirmIssue, setConfirmIssue] = useState(false);
-  const [openTimeline, setOpenTimeline] = useState(false);
+  const [openTimeline, setOpenTimeline] = useState(true);
   const [confirmIssueResolved, { isLoading: isConfirming }] =
     useConfirmIssueResolvedMutation();
 

@@ -108,6 +108,7 @@ export default function IssueList() {
       icon: <Plus className="h-4 w-4" />,
       variant: "default",
       size: "default",
+      permissions: ["REQUEST:CREATE"],
       onClick: () => navigate("/add_issue"),
     },
   ];

@@ -9,6 +9,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "../../chart";
+import { Card } from "../../card";
 
 export const description = "A mixed bar chart";
 
@@ -48,7 +49,7 @@ const chartConfig = {
 
 export function ChartBarMixed() {
   return (
-    <div className="w-full h-full flex flex-col p-4">
+    <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
       <div className="flex flex-col gap-1 pb-4 mb-4 ">
         <h3 className="text-lg font-semibold">Bar Chart - Mixed</h3>
         <p className="text-sm text-muted-foreground">January - June 2024</p>
@@ -91,6 +92,6 @@ export function ChartBarMixed() {
           Showing total visitors for the last 6 months
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

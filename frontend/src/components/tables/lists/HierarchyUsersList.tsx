@@ -11,65 +11,8 @@ import { ActionButton, FilterField } from "../../../types/layout";
 import { useRemoveUserFromProjectMutation } from "../../../redux/services/projectApi";
 import AssignUserModal from "../../modals/AssignUserToProjectModal";
 import { useGetUsersByHierarchyNodeIdQuery } from "../../../redux/services/userApi";
-
-// =======================
-// TABLE COLUMNS
-// =======================
-const columns = [
-  {
-    accessorKey: "user.full_name",
-    header: "User",
-    cell: ({ row }: any) => (
-      <div className="font-medium text-blue-600">
-        {row.original.user?.full_name}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "user.email",
-    header: "Email",
-    cell: ({ row }: any) => <div>{row.original.user?.email}</div>,
-  },
-  {
-    accessorKey: "role.name",
-    header: "Role",
-    cell: ({ row }: any) => row.original.role?.name,
-  },
-  {
-    accessorKey: "hierarchyNode.name",
-    header: "Structure",
-    cell: ({ row }: any) =>
-      row.original.hierarchyNode?.name || (
-        <span className="text-gray-400">-</span>
-      ),
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }: any) => {
-      const item = row.original;
-      const [removeAssignment] = useRemoveUserFromProjectMutation();
-
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-          onClick={() => {
-            if (confirm("Remove this assignment?")) {
-              removeAssignment({
-                project_id: item.project_id,
-                user_id: item.user_id,
-              });
-            }
-          }}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-];
+import { useAuth } from "../../../contexts/AuthContext";
+import { ComponentGuard } from "../../common/ComponentGuard";
 
 interface Props {
   projectId: string;
@@ -91,6 +34,66 @@ export default function HierarchyUsersList({
   const [filteredResponse, setFilteredResponse] = useState<any[]>([]);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [isModalOpen, setModalOpen] = useState(false);
+  const { hasAnyPermission } = useAuth();
+  const hasPermission = hasAnyPermission(["PROJECT_STRUCTURES:REMOVE_USERS"]);
+
+  const columns = [
+    {
+      accessorKey: "user.full_name",
+      header: "User",
+      cell: ({ row }: any) => (
+        <div className="font-medium text-blue-600">
+          {row.original.user?.full_name}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "user.email",
+      header: "Email",
+      cell: ({ row }: any) => <div>{row.original.user?.email}</div>,
+    },
+    {
+      accessorKey: "role.name",
+      header: "Role",
+      cell: ({ row }: any) => row.original.role?.name,
+    },
+    {
+      accessorKey: "hierarchyNode.name",
+      header: "Structure",
+      cell: ({ row }: any) =>
+        row.original.hierarchyNode?.name || (
+          <span className="text-gray-400">-</span>
+        ),
+    },
+    hasPermission && {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }: any) => {
+        const item = row.original;
+        const [removeAssignment] = useRemoveUserFromProjectMutation();
+
+        return (
+          <ComponentGuard permissions={["PROJECT_STRUCTURES:REMOVE_USERS"]}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+              onClick={() => {
+                if (confirm("Remove this assignment?")) {
+                  removeAssignment({
+                    project_id: item.project_id,
+                    user_id: item.user_id,
+                  });
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </ComponentGuard>
+        );
+      },
+    },
+  ].filter(Boolean);
 
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
@@ -115,6 +118,7 @@ export default function HierarchyUsersList({
       variant: "default",
       size: "default",
       onClick: () => setModalOpen(true),
+      permissions: ["PROJECT_STRUCTURES:ASSIGN_USERS"],
     },
   ];
   // Filters
