@@ -184,7 +184,7 @@ export default function ProjectMetricsList() {
       />
 
       <DeleteModal
-        message="Are you sure you want to delete this metric?"
+        message="Are you sure you want to delete this Human Resource?"
         onCancel={() => setDeleteModalOpen(false)}
         onDelete={() => {
           deleteMetric(deleteMetricId).unwrap();

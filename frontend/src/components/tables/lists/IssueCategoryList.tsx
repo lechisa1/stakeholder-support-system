@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Plus, Eye, Edit, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
-
+import { useEffect, useState } from "react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 import {
   useGetIssueCategoriesQuery,
   useDeleteIssueCategoryMutation,
@@ -13,82 +11,25 @@ import { PageLayout } from "../../common/PageLayout";
 import { DataTable } from "../../common/CommonTable";
 import { ActionButton, FilterField } from "../../../types/layout";
 import { CreateCategoryModal } from "../../modals/CreateCategoryModal";
-import { format } from "date-fns";
+import { EditCategoryModal } from "../../modals/EditCategoryModal";
+import DeleteModal from "../../common/DeleteModal";
+import type { IssueCategory } from "../../../redux/services/issueCategoryApi";
 
-// --- Define table columns ---
-const CategoryTableColumns = [
-  {
-    accessorKey: "name",
-    header: "Category Name",
-    cell: ({ row }: any) => (
-      <div className="font-medium text-blue-600">{row.getValue("name")}</div>
-    ),
-  },
-  {
-    accessorKey: "description",
-    header: "Description",
-    cell: ({ row }: any) => <div>{row.getValue("description") || "N/A"}</div>,
-  },
-  // {
-  //   accessorKey: "created_at",
-  //   header: "Created At",
-  //   cell: ({ row }: any) => (
-  //     <div>
-  //       {row.getValue("created_at")
-  //         ? format(new Date(row.getValue("created_at")), "PPP p")
-  //         : "N/A"}
-  //     </div>
-  //   ),
-  // },
-  // {
-  //   accessorKey: "updated_at",
-  //   header: "Updated At",
-  //   cell: ({ row }: any) => (
-  //     <div>
-  //       {row.getValue("updated_at")
-  //         ? format(new Date(row.getValue("updated_at")), "PPP p")
-  //         : "N/A"}
-  //     </div>
-  //   ),
-  // },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }: any) => {
-      const category = row.original;
-      const [deleteCategory] = useDeleteIssueCategoryMutation();
-
-      return (
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
-            <Link to={`/issue_category/${category.category_id}`}>
-              <Eye className="h-4 w-4" />
-            </Link>
-          </Button>
-          {/* <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
-            <Link to={`/issue_category/${category.category_id}`}>
-              <Edit className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-            onClick={() => deleteCategory(category.category_id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button> */}
-        </div>
-      );
-    },
-  },
-];
+type IssueCategoryRow = IssueCategory & { is_active?: boolean };
 
 export default function IssueCategoryList() {
-  const [response, setResponse] = useState<any[]>([]);
-  const [filteredResponse, setFilteredResponse] = useState<any[]>([]);
+  const [response, setResponse] = useState<IssueCategoryRow[]>([]);
+  const [filteredResponse, setFilteredResponse] = useState<IssueCategoryRow[]>(
+    []
+  );
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(
+    null
+  );
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
@@ -96,6 +37,8 @@ export default function IssueCategoryList() {
   });
 
   const { data, isLoading, isError } = useGetIssueCategoriesQuery();
+  const [deleteCategory, { isLoading: isDeleting }] =
+    useDeleteIssueCategoryMutation();
 
   const actions: ActionButton[] = [
     {
@@ -147,6 +90,92 @@ export default function IssueCategoryList() {
     setPageDetail({ ...pageDetail, pageIndex: index, pageSize: size });
   };
 
+  const handleDeleteClick = (categoryId: string) => {
+    setPendingDeleteId(categoryId);
+    setDeleteModalOpen(true);
+  };
+
+  const handleEditClick = (category: IssueCategoryRow) => {
+    setSelectedCategory(category);
+    setEditModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    try {
+      await deleteCategory(pendingDeleteId).unwrap();
+    } finally {
+      setDeleteModalOpen(false);
+      setPendingDeleteId(null);
+    }
+  };
+
+  const handleEditClose = () => {
+    setEditModalOpen(false);
+    setSelectedCategory(null);
+  };
+
+  const CategoryTableColumns = [
+    {
+      accessorKey: "name",
+      header: "Category Name",
+      cell: ({
+        row,
+      }: {
+        row: { getValue: (key: string) => string; original: IssueCategoryRow };
+      }) => (
+        <div className="font-medium text-blue-600">{row.getValue("name")}</div>
+      ),
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: ({
+        row,
+      }: {
+        row: {
+          getValue: (key: string) => string | null;
+          original: IssueCategoryRow;
+        };
+      }) => <div>{row.getValue("description") || "N/A"}</div>,
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({
+        row,
+      }: {
+        row: { original: IssueCategory };
+      }) => {
+        const category = row.original;
+        return (
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
+              <div
+                role="button"
+                className="flex items-center justify-center"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleEditClick(category);
+                }}
+              >
+                <Edit className="h-4 w-4" />
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+              onClick={() => handleDeleteClick(category.category_id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
   console.log("filterFields: ", filterFields);
   console.log("response: ", response);
 
@@ -172,6 +201,23 @@ export default function IssueCategoryList() {
       <CreateCategoryModal
         isOpen={isModalOpen}
         onClose={() => setModalOpen(false)}
+      />
+
+      <EditCategoryModal
+        isOpen={isEditModalOpen}
+        onClose={handleEditClose}
+        category={selectedCategory}
+      />
+
+      <DeleteModal
+        open={deleteModalOpen}
+        message="Are you sure you want to delete this issue category?"
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setPendingDeleteId(null);
+        }}
+        onDelete={handleConfirmDelete}
+        isLoading={isDeleting || isLoading}
       />
     </>
   );
