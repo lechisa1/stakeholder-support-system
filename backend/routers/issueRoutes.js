@@ -233,6 +233,11 @@ router.get(
   issueController.getIssuesByMultipleHierarchyNodes
 );
 
+router.get(
+  "/issues-by-project/:ids",
+  issueController.getProjectIssuesEscalatedOrTopHierarchy
+);
+
 router.delete("/:id", validateIssueIdParam, issueController.deleteIssue);
 
 /**

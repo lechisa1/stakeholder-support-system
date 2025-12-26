@@ -6,6 +6,7 @@ import {
   FaExclamationTriangle,
   FaFlag,
   FaProjectDiagram,
+  FaUserTie,
 } from "react-icons/fa";
 
 export default function Basedata() {
@@ -30,11 +31,11 @@ export default function Basedata() {
       permission: ["REQUEST_PRIORITIES:READ"],
     },
     {
-      title: t("Human Resource Management"),
-      description: t("Human Resource Management", {
-        title: t("basedata.project_human_resource"),
+      title: t("basedata.human_resource_management"),
+      description: t("basedata.subtitle", {
+        title: t("basedata.human_resource"),
       }),
-      icon: <FaFlag size={26} color={"#094C81"} />,
+      icon: <FaUserTie size={26} color={"#094C81"} />,
       route: "/human_resource",
       permission: ["HUMAN_RESOURCES:READ"],
     },

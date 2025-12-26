@@ -1,11 +1,10 @@
-import { useParams, Link } from "react-router-dom";
-import { useGetInternalNodeByIdQuery } from "../../redux/services/internalNodeApi";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import {  useDeleteInternalNodeMutation, useGetInternalNodeByIdQuery } from "../../redux/services/internalNodeApi";
 import PageMeta from "../../components/common/PageMeta";
 import Badge from "../../components/ui/badge/Badge";
 import { format } from "date-fns";
 import {
   RectangleStackIcon,
-  CalendarIcon,
   CheckCircleIcon,
   XCircleIcon,
   ArrowLeftIcon,
@@ -17,20 +16,35 @@ import { Edit, Plus, Trash2 } from "lucide-react";
 import { Button } from "../../components/ui/cn/button";
 import { useState } from "react";
 import { CreateChildInternalNodeModal } from "../../components/modals/CreateChildInternalNodeModal";
-import InternalNodeUsersList from "../../components/tables/lists/InternalNodeUsersList";
 import InternalNodeUsersListConfig from "../../components/tables/lists/InternalNodeUsersListConfig";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
 import { ComponentGuard } from "../../components/common/ComponentGuard";
+import { EditChildInternalNodeModal } from "../../components/modals/EditChildInternalNodeModal";
+import { toast } from "sonner";
+import DeleteModal from "../../components/common/DeleteModal";
 
 const IssueConfigurationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const {
     data: issueFlow,
     isLoading,
     isError,
   } = useGetInternalNodeByIdQuery(id!);
-
+  const [deleteNode, { isLoading: isDeleting }] = useDeleteInternalNodeMutation();
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const handleDelete = async () => {
+    try {
+      await deleteNode(id!).unwrap();
+      setIsOpen(false);
+      navigate(-1);
+      toast.success("Request flow deleted successfully");
+    } catch (error: unknown) {
+      toast.error(error?.data?.message || "Failed to delete issue flow");
+    }
+  };
   // Set dynamic breadcrumb title
   useBreadcrumbTitleEffect(issueFlow?.name, id);
   const formatDateShort = (dateString?: string) => {
@@ -92,6 +106,19 @@ const IssueConfigurationDetail = () => {
 
   return (
     <>
+    <EditChildInternalNodeModal
+  isOpen={isEditModalOpen}
+  onClose={() => setIsEditModalOpen(false)}
+  internalNodeId={id || ""}
+/>
+<DeleteModal
+        message="Are you sure you want to delete this request flow? This action cannot be undone."
+        onCancel={() => setIsOpen(false)}
+        onDelete={handleDelete}
+        open={isOpen}
+        isLoading={isDeleting}
+      />
+
       <PageMeta
         title={`${issueFlow.name} - Issue Flow Details`}
         description={`View details for ${issueFlow.name}`}
@@ -109,13 +136,13 @@ const IssueConfigurationDetail = () => {
             <div className="flex justify-center items-end gap-4">
               <ComponentGuard permissions={["REQUEST_FLOWS:UPDATE"]}>
                 <span>
-                  <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                  <Edit onClick={() => setIsEditModalOpen(true)} className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
                 </span>
               </ComponentGuard>
 
               <ComponentGuard permissions={["REQUEST_FLOWS:DELETE"]}>
                 <span>
-                  <Trash2 className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold" />
+                  <Trash2 onClick={() => setIsOpen(true)} className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold" />
                 </span>
               </ComponentGuard>
             </div>

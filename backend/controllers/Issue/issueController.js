@@ -1085,6 +1085,106 @@ const getIssuesByMultipleHierarchyNodes = async (req, res) => {
 };
 
 // ======================================================
+// Get Project Issues Escalated Or TopHierarchy
+// ======================================================
+
+const getProjectIssuesEscalatedOrTopHierarchy = async (req, res) => {
+  try {
+    const { projectIds } = req.body; // expects { projectIds: ["id1", "id2", ...] }
+
+    if (!projectIds || !Array.isArray(projectIds) || projectIds.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "projectIds must be a non-empty array" });
+    }
+
+    // 1️⃣ Issues escalated to NULL tier
+    const escalatedNullTierRecords = await IssueEscalation.findAll({
+      where: { to_tier: null },
+      include: [
+        {
+          model: Issue,
+          as: "issue",
+          where: { project_id: { [Op.in]: projectIds } },
+          include: [
+            { model: Project, as: "project" },
+            { model: IssueCategory, as: "category" },
+            { model: IssuePriority, as: "priority" },
+            {
+              model: HierarchyNode,
+              as: "hierarchyNode",
+              required: false, // include even if null
+            },
+            { model: User, as: "reporter" },
+            { model: User, as: "assignee" },
+            {
+              model: IssueComment,
+              as: "comments",
+              include: [{ model: User, as: "author" }],
+            },
+            {
+              model: IssueAttachment,
+              as: "attachments",
+              include: [{ model: Attachment, as: "attachment" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    const escalatedIssues = escalatedNullTierRecords.map((r) => r.issue);
+
+    // 2️⃣ Issues created in the project where hierarchy node parent is NULL
+    const topHierarchyIssues = await Issue.findAll({
+      where: { project_id: { [Op.in]: projectIds } },
+      include: [
+        { model: Project, as: "project" },
+        { model: IssueCategory, as: "category" },
+        { model: IssuePriority, as: "priority" },
+        {
+          model: HierarchyNode,
+          as: "hierarchyNode",
+          where: { parent_id: null },
+          required: true,
+        },
+        { model: User, as: "reporter" },
+        { model: User, as: "assignee" },
+        {
+          model: IssueComment,
+          as: "comments",
+          include: [{ model: User, as: "author" }],
+        },
+        {
+          model: IssueAttachment,
+          as: "attachments",
+          include: [{ model: Attachment, as: "attachment" }],
+        },
+      ],
+    });
+
+    // 3️⃣ Merge both results without duplicates
+    const issuesMap = new Map();
+
+    escalatedIssues.forEach((issue) => issuesMap.set(issue.issue_id, issue));
+    topHierarchyIssues.forEach((issue) => issuesMap.set(issue.issue_id, issue));
+
+    const finalIssues = Array.from(issuesMap.values());
+
+    res.status(200).json({
+      success: true,
+      count: finalIssues.length,
+      issues: finalIssues,
+    });
+  } catch (error) {
+    console.error("Error fetching issues:", error);
+    res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// ======================================================
 // GET ISSUES THAT WERE ESCALATED AND to_tier IS NULL
 // ======================================================
 
@@ -1482,6 +1582,7 @@ module.exports = {
   getIssuesByHierarchyNodeId,
   getIssuesByMultipleHierarchyNodes,
   getEscalatedIssuesWithNullTier,
+  getProjectIssuesEscalatedOrTopHierarchy,
   updateIssue,
   deleteIssue,
   acceptIssue,

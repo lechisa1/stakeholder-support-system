@@ -40,12 +40,11 @@
     },
   "basedata": {
     "title": "Base Data",
-
     "first_subtitle": "This is the central admin basedata.",
     "subtitle": "This is the Base Data of the {{title}}",
     "organization_management": "Organization Management",
     "subcity_management": "SubCity Management",
-    "issue_category_management": "Support Request Category Management",
+    "issue_category_management": "Support Request Category",
     "city_management": "City Management",
     "priority_level_management": "Priority Level Management",
     "role_management":"Role Management",
@@ -77,7 +76,9 @@
     "color_code": "Color Code",
     "user_management": "User Management",
     "project_metrics_management": "Project Metrics Management",
-    "project_metrics": "Project Metrics"
+    "project_metrics": "Project Metrics",
+    "human_resource_management": "Human Resources",
+    "human_resource": "Human Resource"
   },
   "org_structure": {
     "add_hierarchy": "Add Hierarchy"

@@ -32,9 +32,9 @@ export {
   projectSchema,
   type ProjectFormData,
   // Users
-  userSchema,
+  createUserSchema,
+  type CreateUserFormData,
   userUpdateSchema,
-  type UserFormData,
   type UserUpdateFormData,
   // Issues
   issueSchema,

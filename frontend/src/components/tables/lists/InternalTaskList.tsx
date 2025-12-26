@@ -12,6 +12,7 @@ import { FilterField } from "../../../types/layout";
 
 import { useIssuesQuery } from "../../../hooks/useIssueQuery";
 import { formatStatus } from "../../../utils/statusFormatter";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const TaskTableColumns = [
   {
@@ -100,6 +101,8 @@ const TaskTableColumns = [
 
 export default function InternalTaskList() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  console.log("user logged auth: ", user);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,

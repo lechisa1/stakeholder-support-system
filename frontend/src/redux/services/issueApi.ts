@@ -19,6 +19,10 @@ export interface IssueByTicketNumberParams {
   ticket_number: string;
 }
 
+export interface IssuesByProjectIdsParams {
+  projectIds: string[]; // array of project UUIDs
+}
+
 export interface Issue {
   issue_id: string;
   institute_project_id?: string | null;
@@ -123,6 +127,14 @@ export const issueApi = baseApi.injectEndpoints({
       providesTags: ["Issue"],
     }),
 
+    getIssuesByProjectIds: builder.query<Issue[], string[]>({
+      query: (projectIds) => {
+        const idsParam = projectIds.join(","); // convert array to comma-separated string
+        return `/issues/issues-by-project/${idsParam}`;
+      },
+      providesTags: ["Issue"],
+    }),
+
     // New endpoint: Get escalated issues with null tier
     getEscalatedIssuesWithNullTier: builder.query<Issue[], void>({
       query: () => `/issues/escalated/null-tier`,
@@ -190,6 +202,7 @@ export const {
   useGetIssuesByUserIdQuery,
   useGetAssignedIssuesQuery,
   useGetEscalatedIssuesWithNullTierQuery,
+  useGetIssuesByProjectIdsQuery,
   useCreateIssueMutation,
   useAcceptIssueMutation,
   useConfirmIssueResolvedMutation,

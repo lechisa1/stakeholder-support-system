@@ -31,6 +31,7 @@ import {
 import { useGetInstituteByIdQuery } from "../../redux/services/instituteApi";
 import { ComponentGuard } from "../../components/common/ComponentGuard";
 import { useAuth } from "../../contexts/AuthContext";
+import { UpdateProjectModal } from "../../components/modals/EditProjectModal";
 
 export default function ProjectDetail() {
   const { id, instituteId } = useParams<{ id: string; instituteId?: string }>();
@@ -40,6 +41,7 @@ export default function ProjectDetail() {
   });
   const [deleteProject, { isLoading: deletingProjectLoading }] =
     useDeleteProjectMutation();
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { hasAnyPermission } = useAuth();
@@ -162,6 +164,16 @@ export default function ProjectDetail() {
 
   return (
     <>
+
+<UpdateProjectModal
+  isOpen={isUpdateModalOpen}
+  projectId={id || null}
+  onClose={() => {
+    setIsUpdateModalOpen(false);
+  }}
+/>
+
+
       <DeleteModal
         message="Are you sure you want to delete this project? This action cannot be undone."
         onCancel={() => setIsOpen(false)}
@@ -184,7 +196,7 @@ export default function ProjectDetail() {
             />
             <div className="flex justify-center items-end gap-4">
               <span>
-                <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                <Edit onClick={() => setIsUpdateModalOpen(true)} className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
               </span>
               <span>
                 <Trash2

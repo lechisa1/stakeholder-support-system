@@ -136,7 +136,6 @@ const updateInternalNode = async (req, res) => {
 const deleteInternalNode = async (req, res) => {
   try {
     const { id } = req.params;
-
     const node = await InternalNode.findByPk(id);
     if (!node)
       return res.status(404).json({ message: "Internal node not found." });

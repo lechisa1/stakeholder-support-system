@@ -15,9 +15,11 @@ export interface IssuePriority {
 // DTO for creating/updating IssuePriority
 export interface CreateIssuePriorityDto {
   name: string;
-  description?: string;
+  description: string;
   color_value: string;
-  response_time: string;
+  response_unit: string;
+  response_duration: number;
+  is_active?: boolean;
 }
 
 // Inject endpoints into baseApi
@@ -60,6 +62,7 @@ export const issuePriorityApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: "IssuePriority", id },
+        "IssuePriority",   
       ],
     }),
 
