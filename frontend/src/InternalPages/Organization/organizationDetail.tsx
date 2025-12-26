@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
 import { ComponentGuard } from "../../components/common/ComponentGuard";
+import { UpdateInstituteModal } from "../../components/modals/EditInstituteModal";
 const OrganizationDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ const OrganizationDetail = () => {
   const [deleteInstitute, { isLoading: isDeleteLoading }] =
     useDeleteInstituteMutation();
   const [isOpen, setIsOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
   // breadcrumbs
   useBreadcrumbTitleEffect(
@@ -109,13 +111,23 @@ const OrganizationDetail = () => {
 
   return (
     <>
-      <DeleteModal
-        message="Are you sure you want to delete this institute? This action cannot be undone."
-        onCancel={() => setIsOpen(false)}
-        onDelete={handleDelete}
-        open={isOpen}
-        isLoading={isDeleteLoading}
-      />
+      <ComponentGuard permissions={["ORGANIZATIONS:DELETE"]}>
+        <DeleteModal
+          message="Are you sure you want to delete this institute? This action cannot be undone."
+          onCancel={() => setIsOpen(false)}
+          onDelete={handleDelete}
+          open={isOpen}
+          isLoading={isDeleteLoading}
+        />
+      </ComponentGuard>
+
+      <ComponentGuard permissions={["ORGANIZATIONS:UPDATE"]}>
+        <UpdateInstituteModal
+          isOpen={isUpdateModalOpen}
+          instituteId={id || null}
+          onClose={() => setIsUpdateModalOpen(false)}
+        />
+      </ComponentGuard>
       <PageMeta
         title={`${organizationDetail.name} - Organization Details`}
         description={`View details for ${organizationDetail.name}`}
@@ -127,7 +139,10 @@ const OrganizationDetail = () => {
             <div className="flex justify-center items-end gap-4">
               <ComponentGuard permissions={["ORGANIZATIONS:UPDATE"]}>
                 <span>
-                  <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                  <Edit
+                    onClick={() => setIsUpdateModalOpen(true)}
+                    className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold"
+                  />
                 </span>
               </ComponentGuard>
               <ComponentGuard permissions={["ORGANIZATIONS:DELETE"]}>
@@ -180,19 +195,7 @@ const OrganizationDetail = () => {
                   )}
                 </Badge>
               </div>
-
-              {/* Details - Horizontal Compact Layout */}
-              {/* <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                <div className="flex items-center gap-1.5">
-                  <CalendarIcon className="h-3.5 w-3.5 text-[#1E516A]" />
-                  <span className="text-xs font-medium text-[#1E516A]">
-                    Created:
-                  </span>
-                  <span className="text-gray-600 text-sm">
-                    {formatDateShort(organizationDetail.created_at)}
-                  </span>
-                </div>
-              </div> */}
+ 
 
               {/* Deleted At - Compact Alert */}
               {organizationDetail.deleted_at && (

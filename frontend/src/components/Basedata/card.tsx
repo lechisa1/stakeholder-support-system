@@ -28,7 +28,7 @@ const InfoCard: React.FC<InfoCardProps> = ({
   }
 
   return (
-    <div className="flex gap-5 shadow-lg hover:shadow-xl transition-shadow duration-300 bg-gradient-to-b from-[#F9FBFC] to-[#EFF6FB] rounded-[35px] justify-between items-center p-4 bg-white  border border-gray-200 dark:bg-gray-800 dark:border-gray-700 w-full ">
+    <div className="flex gap-5 shadow-lg min-h-[120px] hover:shadow-xl transition-shadow duration-300 bg-blue-50 rounded-2xl justify-between items-center p-4   border border-gray-200 dark:bg-gray-800 dark:border-gray-700 w-full ">
       <div className="flex items-center gap-5">
         {icon && (
           <div className="text-blue-600 dark:text-blue-400 ">{icon}</div>

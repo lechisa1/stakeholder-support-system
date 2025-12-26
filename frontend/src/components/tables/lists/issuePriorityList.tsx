@@ -12,6 +12,7 @@ import {
 } from "../../../redux/services/issuePriorityApi";
 import { CreatePriorityModal } from "../../modals/CreatePriorityModal";
 import DeleteModal from "../../common/DeleteModal";
+import { EditPriorityModal } from "../../modals/EditPriorityModal";
 import { ComponentGuard } from "../../common/ComponentGuard";
 import { useAuth } from "../../../contexts/AuthContext";
 
@@ -279,6 +280,15 @@ export default function IssuePriorityList() {
         open={isDeleteModalOpen}
         isLoading={isDeleteLoading}
       />
+      <EditPriorityModal
+  isOpen={isEditModalOpen}
+  priorityId={editPriorityId}
+  onClose={() => {
+    setEditModalOpen(false);
+    setEditPriorityId("");
+  }}
+/>
+
     </>
   );
 }

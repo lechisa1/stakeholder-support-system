@@ -8,35 +8,62 @@ import { Label } from "../ui/cn/label";
 import TextArea from "../form/input/TextArea";
 import { XIcon, ChevronDown } from "lucide-react";
 import { HexColorPicker } from "react-colorful";
-import { useCreateIssuePriorityMutation } from "../../redux/services/issuePriorityApi";
+import {
+  useGetIssuePriorityByIdQuery,
+  useUpdateIssuePriorityMutation,
+} from "../../redux/services/issuePriorityApi";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { prioritySchema, type PriorityFormData } from "../../utils/validation";
-interface CreatePriorityModalProps {
+
+interface EditPriorityModalProps {
   isOpen: boolean;
   onClose: () => void;
+  priorityId: string;
 }
 
-export const CreatePriorityModal: React.FC<CreatePriorityModalProps> = ({
+// API response structure: { message: string, data: {...} }
+interface PriorityApiResponse {
+  message?: string;
+  data?: {
+    priority_id: string;
+    name: string;
+    description?: string;
+    color_value: string;
+    response_duration: number;
+    response_unit: "hour" | "day" | "month";
+    is_active: boolean;
+    created_at?: string;
+    updated_at?: string;
+  };
+}
+
+export const EditPriorityModal: React.FC<EditPriorityModalProps> = ({
   isOpen,
+  priorityId,
   onClose,
 }) => {
-  const [responseUnit, setResponseUnit] = useState("hour");
   const [color, setColor] = useState("#aabbcc");
+  const [responseUnit, setResponseUnit] = useState("hour");
 
-  const [createPriority, { isLoading }] = useCreateIssuePriorityMutation();
+  const { data: priorityResponse, isLoading } = useGetIssuePriorityByIdQuery(priorityId, {
+    skip: !isOpen || !priorityId,
+    refetchOnMountOrArgChange: true,
+  });
+
+  const [updatePriority, { isLoading: isUpdating }] = useUpdateIssuePriorityMutation();
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
-    watch,
-    setError: setFormError,
-    reset,
     setValue,
+    reset,
+    watch,
     trigger,
+    formState: { errors },
   } = useForm<PriorityFormData>({
-    resolver: zodResolver(prioritySchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(prioritySchema) as any,
     defaultValues: {
       name: "",
       description: "",
@@ -46,6 +73,33 @@ export const CreatePriorityModal: React.FC<CreatePriorityModalProps> = ({
       is_active: false,
     },
   });
+
+  // Prefill form when data loads
+  useEffect(() => {
+    if (priorityResponse) {
+      // Handle nested response structure: { message: string, data: {...} }
+      // API returns: { message: "...", data: { priority_id, name, ... } }
+      const responseData = priorityResponse as PriorityApiResponse | PriorityApiResponse["data"];
+      const priorityData = responseData && "data" in responseData && responseData.data 
+        ? responseData.data 
+        : (responseData as PriorityApiResponse["data"] | undefined);
+      
+      if (priorityData && typeof priorityData === "object" && "name" in priorityData) {
+        reset({
+          name: priorityData.name || "",
+          description: priorityData.description || "",
+          response_duration: priorityData.response_duration ?? 0,
+          response_unit: (priorityData.response_unit ?? "hour") as "hour" | "day" | "month",
+          color_value: priorityData.color_value || "#aabbcc",
+          is_active: priorityData.is_active ?? false,
+        });
+        
+        setColor(priorityData.color_value || "#aabbcc");
+        setResponseUnit((priorityData.response_unit ?? "hour") as "hour" | "day" | "month");
+      }
+    }
+  }, [priorityResponse, reset]);
+
   const handleClose = () => {
     reset({
       name: "",
@@ -55,22 +109,22 @@ export const CreatePriorityModal: React.FC<CreatePriorityModalProps> = ({
       color_value: "#aabbcc",
       is_active: false,
     });
+    setColor("#aabbcc");
+    setResponseUnit("hour");
     onClose();
   };
-  const onSubmit = async (data: PriorityFormData) => {
+
+  const onSubmit = async (formData: PriorityFormData) => {
     try {
-      await createPriority(data).unwrap();
-      toast.success("Priority created successfully");
-      reset();
+      await updatePriority({ id: priorityId, data: formData }).unwrap();
+      toast.success("Priority updated successfully");
       handleClose();
     } catch (error: unknown) {
       const message =
-        (error as { message?: string })?.message || "Failed to create priority";
-      setFormError("root", { message });
+        (error as { message?: string })?.message || "Failed to update priority";
+      toast.error(message);
     }
   };
-
- 
 
   const unitOptions = [
     { value: "hour", label: "Hours" },
@@ -85,7 +139,7 @@ export const CreatePriorityModal: React.FC<CreatePriorityModalProps> = ({
       <div className="w-full max-w-[700px] rounded-2xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-[20px] font-bold text-[#094C81]">
-            Create New Request Priority
+            Edit Request Priority
           </h2>
           <button
             onClick={handleClose}
@@ -95,10 +149,16 @@ export const CreatePriorityModal: React.FC<CreatePriorityModalProps> = ({
           </button>
         </div>
 
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="space-y-4 flex w-full flex-col"
-        >
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-[#094C81]">Loading priority data...</div>
+          </div>
+        ) : (
+          <form
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onSubmit={handleSubmit(onSubmit as any)}
+            className="space-y-4 flex w-full flex-col"
+          >
           <div className="flex w-full gap-10">
             {/* Left side: Name, Response Time, Description */}
             <div className="flex w-1/2 flex-col gap-3 space-y-1">
@@ -150,7 +210,11 @@ export const CreatePriorityModal: React.FC<CreatePriorityModalProps> = ({
                   <div className="relative">
                     <select
                       value={responseUnit}
-                      onChange={(e) => setResponseUnit(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value as "hour" | "day" | "month";
+                        setResponseUnit(value);
+                        setValue("response_unit", value);
+                      }}
                       className="
         h-11 px-3 py-2 bg-white text-[#094C81]
         rounded-r-md
@@ -262,11 +326,12 @@ export const CreatePriorityModal: React.FC<CreatePriorityModalProps> = ({
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create"}
+            <Button type="submit" disabled={isUpdating || isLoading}>
+              {isUpdating ? "Updating..." : "Update"}
             </Button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

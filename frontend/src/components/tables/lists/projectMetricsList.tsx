@@ -14,12 +14,15 @@ import {
 import { CreateProjectMetricModal } from "../../modals/CreateProjectMetricModal";
 import { useAuth } from "../../../contexts/AuthContext";
 import { ComponentGuard } from "../../common/ComponentGuard";
+import { EditHumanResourceModal } from "../../modals/EditProjectMetricModal";
 
 export default function ProjectMetricsList() {
   const [response, setResponse] = useState<any[]>([]);
   const [filteredResponse, setFilteredResponse] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [editMetricId, setEditMetricId] = useState<string>("");
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
@@ -74,7 +77,10 @@ export default function ProjectMetricsList() {
                 variant="outline"
                 size="sm"
                 className="h-8 w-8 p-0"
-                // onClick={() => openEditModal(metric)}
+                  onClick={() => {
+                    setEditModalOpen(true);
+                    setEditMetricId(metric.project_metric_id);
+                  }}
               >
                 <Edit className="h-4 w-4" />
               </Button>
@@ -165,8 +171,8 @@ export default function ProjectMetricsList() {
         filters={filterFields}
         filterColumnsPerRow={1}
         actions={actions}
-        title="Project Metrics List"
-        description="List of all project metrics"
+        title="Human Resource List"
+        description="List of all human resources"
       >
         <DataTable
           columns={metricColumns}
@@ -184,7 +190,7 @@ export default function ProjectMetricsList() {
       />
 
       <DeleteModal
-        message="Are you sure you want to delete this metric?"
+        message="Are you sure you want to delete this Human Resource?"
         onCancel={() => setDeleteModalOpen(false)}
         onDelete={() => {
           deleteMetric(deleteMetricId).unwrap();
@@ -192,6 +198,11 @@ export default function ProjectMetricsList() {
         }}
         open={isDeleteModalOpen}
         isLoading={isDeleteLoading || isLoading}
+      />
+      <EditHumanResourceModal
+        isOpen={isEditModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        metricId={editMetricId}
       />
     </>
   );

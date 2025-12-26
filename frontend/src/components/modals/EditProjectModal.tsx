@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Label } from "../ui/cn/label";
 import { Button } from "../ui/cn/button";
 import DatePicker from "react-datepicker";
-import { useCreateProjectMutation } from "../../redux/services/projectApi";
+import { useCreateProjectMutation, useGetProjectByIdQuery, useUpdateProjectMutation } from "../../redux/services/projectApi";
 import { XIcon, CalendarIcon, Check } from "lucide-react";
 
 // Import react-datepicker styles
@@ -21,9 +21,9 @@ import TextArea from "../form/input/TextArea";
 import Input from "../form/input/InputField";
 
 interface CreateProjectModalProps {
-  instituteId: string;
   isOpen: boolean;
   onClose: () => void;
+  projectId: string;
 }
 
 interface ProjectMetric {
@@ -38,15 +38,20 @@ interface ProjectMetric {
   users: any[];
 }
 
-export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
-  instituteId,
+export const UpdateProjectModal: React.FC<CreateProjectModalProps> = ({
   isOpen,
   onClose,
+  projectId,
 }) => {
   const [isActive, setIsActive] = useState(true);
   const [selectAll, setSelectAll] = useState(false);
 
-  const [createProject, { isLoading }] = useCreateProjectMutation();
+  const [updateProject, { isLoading: isUpdatingProjectLoading }] = useUpdateProjectMutation();
+  const {
+    data: project,
+    isLoading: projectLoading,
+    isError: projectError,
+  } = useGetProjectByIdQuery(projectId);
   const {
     data: metricsData,
     isLoading: loadingMetrics,
@@ -71,6 +76,29 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       project_metrics_ids: [],
     },
   });
+  useEffect(() => {
+    if (!project) return;
+  
+    reset({
+      name: project.name,
+      description: project.description ?? "",
+      is_active: project.is_active ?? true,
+  
+      maintenance_start: project.maintenances?.[0]?.start_date
+        ? new Date(project.maintenances[0].start_date)
+        : undefined,
+  
+      maintenance_end: project.maintenances?.[0]?.end_date
+        ? new Date(project.maintenances[0].end_date)
+        : undefined,
+  
+      project_metrics_ids: project.metrics?.map(
+        (metric) => metric.project_metric_id
+      ) ?? [],
+    });
+  }, [project, reset]);
+  
+  console.log(project,'project');
   const maintenanceStart = watch("maintenance_start");
   const maintenanceEnd = watch("maintenance_end");
   const projectMetricsIds = watch("project_metrics_ids") || [];
@@ -123,7 +151,6 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       name: data.name,
       description: data.description || undefined,
       is_active: data.is_active ?? true,
-      institute_id: instituteId || undefined,
       maintenance_start: data.maintenance_start
         ? data.maintenance_start.toISOString().split("T")[0]
         : undefined,
@@ -137,12 +164,11 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     };
 
     try {
-      await createProject(payload).unwrap();
-      // console.log("payload: ", payload);
-      toast.success("Project created successfully!");
+      await updateProject({ id: projectId, data: payload }).unwrap();
+      toast.success("Project updated successfully!");
       handleClose();
-    } catch (error: unknown) {
-      toast.error(error?.data?.message || "Failed to create project");
+    } catch (error: any) {
+      toast.error(error.data.message || "Failed to update project");
     }
   };
 
@@ -445,8 +471,8 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting || isLoading}>
-            {isLoading ? "Creating..." : "Create"}
+          <Button type="submit" disabled={isSubmitting || isUpdatingProjectLoading}>
+            {isUpdatingProjectLoading ? "Updating..." : "Update"}
           </Button>
         </div>
       </form>

@@ -27,6 +27,7 @@ import HierarchyNodeList from "../../components/tables/lists/hierarchyNodeList";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
 import { ComponentGuard } from "../../components/common/ComponentGuard";
 import { useAuth } from "../../contexts/AuthContext";
+import { UpdateProjectModal } from "../../components/modals/EditProjectModal";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +36,7 @@ export default function ProjectDetail() {
     useDeleteProjectMutation();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const { hasAnyPermission } = useAuth();
 
   // Check permissions for both tabs
@@ -144,8 +146,16 @@ export default function ProjectDetail() {
 
   return (
     <>
+      <UpdateProjectModal
+        isOpen={isUpdateModalOpen}
+        projectId={id || null}
+        onClose={() => {
+          setIsUpdateModalOpen(false);
+        }}
+      />
+
       <DeleteModal
-        message="Are you sure you want to delete this project? This action cannot be undone."
+        message="Are yo0u sure you want to delete this project? This action cannot be undone."
         onCancel={() => setIsOpen(false)}
         onDelete={handleDelete}
         open={isOpen}
@@ -167,7 +177,10 @@ export default function ProjectDetail() {
             <div className="flex justify-center items-end gap-4">
               <ComponentGuard permissions={["PROJECTS:UPDATE"]}>
                 <span>
-                  <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                  <Edit
+                    onClick={() => setIsUpdateModalOpen(true)}
+                    className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold"
+                  />
                 </span>
               </ComponentGuard>
               <ComponentGuard permissions={["PROJECTS:DELETE"]}>
