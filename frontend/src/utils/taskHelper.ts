@@ -201,10 +201,7 @@ export const canInternallyMarkInProgress = (
     );
   // console.log("acceptedActions:", acceptedActions);
 
-  // If there are no accepted actions, return false
-  if (acceptedActions.length === 0) {
-    return false;
-  }
+  
   // Check if user_id exists in any accepted actions
   if (acceptedActions?.some((action: any) => action.user_id === user_id)) {
     return false;

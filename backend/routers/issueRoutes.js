@@ -234,7 +234,7 @@ router.get(
 );
 
 router.get(
-  "/issues-by-project/:ids",
+  "/issues-by-project/:projectIds",
   issueController.getProjectIssuesEscalatedOrTopHierarchy
 );
 

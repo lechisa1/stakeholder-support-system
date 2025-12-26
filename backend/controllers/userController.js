@@ -486,6 +486,8 @@ const getUsers = async (req, res) => {
       hierarchy_node_id,
       is_active,
       search, // optional: for name/email search
+      page = 1,
+      pageSize = 10,
     } = req.query;
 
     // ====== Build filters dynamically ======
@@ -504,6 +506,14 @@ const getUsers = async (req, res) => {
         { phone_number: { [Op.like]: `%${search}%` } },
       ];
     }
+
+    // ====== Calculate pagination ======
+    const pageNum = parseInt(page);
+    const limit = parseInt(pageSize);
+    const offset = (pageNum - 1) * limit;
+
+    // ====== Fetch total count ======
+    const total = await User.count({ where: whereClause });
 
     // ====== Fetch users with associations ======
     const users = await User.findAll({
@@ -526,12 +536,22 @@ const getUsers = async (req, res) => {
         },
       ],
       order: [["created_at", "DESC"]],
+      limit: limit,
+      offset: offset,
     });
+
+    const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
       success: true,
       message: "Users fetched successfully.",
       data: users,
+      meta: {
+        page: pageNum,
+        pageSize: limit,
+        total: total,
+        totalPages: totalPages,
+      },
     });
   } catch (error) {
     console.error("Error fetching users:", error);

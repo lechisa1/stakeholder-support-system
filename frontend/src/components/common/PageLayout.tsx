@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { Input } from "../ui/cn/input";
 import { Button } from "../ui/cn/button";
@@ -30,7 +30,10 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
   const location = useLocation();
   const { hasAnyPermission } = useAuth();
   // Local state to control input value
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const initialSearchQuery =
+    new URLSearchParams(location.search).get("search") || "";
+  const [searchQuery, setSearchQuery] = useState<string>(initialSearchQuery);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Sync search input with URL query params
   useEffect(() => {
@@ -42,18 +45,35 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
     (value: string) => {
       setSearchQuery(value);
 
-      const params = new URLSearchParams(location.search);
-      if (value) {
-        params.set("search", value);
-      } else {
-        params.delete("search");
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
       }
-      params.set("page", "1"); // reset page
 
-      navigate(`${location.pathname}?${params.toString()}`);
+      debounceTimeout.current = setTimeout(() => {
+        const params = new URLSearchParams(location.search);
+        if (value.trim()) {
+          params.set("search", value.trim());
+        } else {
+          params.delete("search");
+        }
+        params.set("page", "1");
+        params.delete("pageIndex");
+
+        navigate(`${location.pathname}?${params.toString()}`, {
+          replace: true,
+        });
+      }, 300);
     },
     [location.pathname, location.search, navigate]
   );
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, []);
 
   const filteredActions = actions.filter((action) => {
     if (!action.permissions || action.permissions.length === 0) {

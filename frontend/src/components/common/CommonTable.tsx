@@ -37,13 +37,17 @@ interface DataTableProps<TData, TValue> {
   handlePagination: (index: number, pageSize: number) => void;
   tablePageSize: number;
   currentIndex: number;
+  isLoading?: boolean;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  totalPageCount = 5,
+  totalPageCount = 1,
   handlePagination,
+  tablePageSize,
+  currentIndex,
+  isLoading = false,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -52,16 +56,65 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     manualPagination: true,
     pageCount: totalPageCount,
+    state: {
+      pagination: {
+        pageIndex: currentIndex,
+        pageSize: tablePageSize,
+      },
+    },
+    onPaginationChange: (updater) => {
+      const newPagination =
+        typeof updater === "function"
+          ? updater({ pageIndex: currentIndex, pageSize: tablePageSize })
+          : updater;
+
+      if (newPagination.pageIndex !== undefined) {
+        handlePagination(
+          newPagination.pageIndex,
+          newPagination.pageSize || tablePageSize
+        );
+      } else if (newPagination.pageSize !== undefined) {
+        handlePagination(0, newPagination.pageSize); // 重置到第一页
+      }
+    },
   });
 
-  useEffect(() => {
-    const { pageIndex, pageSize } = table.getState().pagination;
-    console.log("index", pageIndex, "size", pageSize);
-    handlePagination(pageIndex, pageSize);
-  }, [
-    table.getState().pagination.pageIndex,
-    table.getState().pagination.pageSize,
-  ]);
+  const canPreviousPage = currentIndex > 0;
+  const canNextPage = currentIndex < totalPageCount - 1;
+
+  const handlePreviousPage = () => {
+    if (canPreviousPage) {
+      handlePagination(currentIndex - 1, tablePageSize);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (canNextPage) {
+      handlePagination(currentIndex + 1, tablePageSize);
+    }
+  };
+
+  const handleFirstPage = () => {
+    handlePagination(0, tablePageSize);
+  };
+
+  const handleLastPage = () => {
+    handlePagination(totalPageCount - 1, tablePageSize);
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    const newPageSize = Number(value);
+    handlePagination(0, newPageSize); // 重置到第一页
+  };
+
+  // useEffect(() => {
+  //   const { pageIndex, pageSize } = table.getState().pagination;
+  //   console.log("index", pageIndex, "size", pageSize);
+  //   handlePagination(pageIndex, pageSize);
+  // }, [
+  //   table.getState().pagination.pageIndex,
+  //   table.getState().pagination.pageSize,
+  // ]);
 
   return (
     <div className="overflow-auto w-full">
@@ -132,10 +185,8 @@ export function DataTable<TData, TValue>({
       <div className="flex flex-wrap pb-1 justify-end items-center gap-2">
         <div>
           <Select
-            value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => {
-              table.setPageSize(Number(value));
-            }}
+            value={`${tablePageSize}`}
+            onValueChange={handlePageSizeChange}
           >
             <SelectTrigger className="h-8 w-[70px]">
               <SelectValue placeholder={table.getState().pagination.pageSize} />
@@ -150,15 +201,14 @@ export function DataTable<TData, TValue>({
           </Select>
         </div>
         <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+          Page {currentIndex + 1} of {totalPageCount || 1}
         </div>
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
             className="hidden h-8 w-8 p-0 lg:flex"
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
+            onClick={handleFirstPage}
+            disabled={!canPreviousPage || isLoading}
           >
             <span className="sr-only">Go to first page</span>
             <DoubleArrowLeftIcon className="h-4 w-4" />
@@ -166,8 +216,8 @@ export function DataTable<TData, TValue>({
           <Button
             variant="outline"
             className="h-8 w-8 p-0"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            onClick={handlePreviousPage}
+            disabled={!canPreviousPage || isLoading}
           >
             <span className="sr-only">Go to previous page</span>
             <ChevronLeftIcon className="h-4 w-4" />
@@ -175,10 +225,8 @@ export function DataTable<TData, TValue>({
           <Button
             variant="outline"
             className="h-8 w-8 p-0"
-            onClick={() => {
-              table.nextPage();
-            }}
-            disabled={!table.getCanNextPage()}
+            onClick={handleNextPage}
+            disabled={!canNextPage || isLoading}
           >
             <span className="sr-only">Go to next page</span>
             <ChevronRightIcon className="h-4 w-4" />
@@ -186,8 +234,8 @@ export function DataTable<TData, TValue>({
           <Button
             variant="outline"
             className="hidden h-8 w-8 p-0 lg:flex"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
+            onClick={handleLastPage}
+            disabled={!canNextPage || isLoading}
           >
             <span className="sr-only">Go to last page</span>
             <DoubleArrowRightIcon className="h-4 w-4" />

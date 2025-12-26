@@ -129,8 +129,8 @@ export const issueApi = baseApi.injectEndpoints({
 
     getIssuesByProjectIds: builder.query<Issue[], string[]>({
       query: (projectIds) => {
-        const idsParam = projectIds.join(","); // convert array to comma-separated string
-        return `/issues/issues-by-project/${idsParam}`;
+        const encoded = encodeURIComponent(JSON.stringify(projectIds));
+        return `/issues/issues-by-project/${encoded}`;
       },
       providesTags: ["Issue"],
     }),

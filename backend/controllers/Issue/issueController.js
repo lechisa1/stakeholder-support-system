@@ -1090,22 +1090,40 @@ const getIssuesByMultipleHierarchyNodes = async (req, res) => {
 
 const getProjectIssuesEscalatedOrTopHierarchy = async (req, res) => {
   try {
-    const { projectIds } = req.body; // expects { projectIds: ["id1", "id2", ...] }
+    const { projectIds } = req.params;
 
-    if (!projectIds || !Array.isArray(projectIds) || projectIds.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "projectIds must be a non-empty array" });
+    if (!projectIds) {
+      return res.status(400).json({
+        message: "projectIds parameter is required",
+      });
     }
 
+    let parsedProjectIds;
+
+    try {
+      parsedProjectIds = JSON.parse(decodeURIComponent(projectIds));
+    } catch (err) {
+      return res.status(400).json({
+        message: "Invalid projectIds format",
+      });
+    }
+
+    if (!Array.isArray(parsedProjectIds) || parsedProjectIds.length === 0) {
+      return res.status(400).json({
+        message: "projectIds must be a non-empty array",
+      });
+    }
+
+    // ======================================================
     // 1️⃣ Issues escalated to NULL tier
+    // ======================================================
     const escalatedNullTierRecords = await IssueEscalation.findAll({
       where: { to_tier: null },
       include: [
         {
           model: Issue,
           as: "issue",
-          where: { project_id: { [Op.in]: projectIds } },
+          where: { project_id: { [Op.in]: parsedProjectIds } },
           include: [
             { model: Project, as: "project" },
             { model: IssueCategory, as: "category" },
@@ -1113,7 +1131,7 @@ const getProjectIssuesEscalatedOrTopHierarchy = async (req, res) => {
             {
               model: HierarchyNode,
               as: "hierarchyNode",
-              required: false, // include even if null
+              required: false,
             },
             { model: User, as: "reporter" },
             { model: User, as: "assignee" },
@@ -1134,9 +1152,11 @@ const getProjectIssuesEscalatedOrTopHierarchy = async (req, res) => {
 
     const escalatedIssues = escalatedNullTierRecords.map((r) => r.issue);
 
-    // 2️⃣ Issues created in the project where hierarchy node parent is NULL
+    // ======================================================
+    // 2️⃣ Top hierarchy issues
+    // ======================================================
     const topHierarchyIssues = await Issue.findAll({
-      where: { project_id: { [Op.in]: projectIds } },
+      where: { project_id: { [Op.in]: parsedProjectIds } },
       include: [
         { model: Project, as: "project" },
         { model: IssueCategory, as: "category" },
@@ -1162,11 +1182,13 @@ const getProjectIssuesEscalatedOrTopHierarchy = async (req, res) => {
       ],
     });
 
-    // 3️⃣ Merge both results without duplicates
+    // ======================================================
+    // 3️⃣ Merge & deduplicate
+    // ======================================================
     const issuesMap = new Map();
 
-    escalatedIssues.forEach((issue) => issuesMap.set(issue.issue_id, issue));
-    topHierarchyIssues.forEach((issue) => issuesMap.set(issue.issue_id, issue));
+    escalatedIssues.forEach((i) => issuesMap.set(i.issue_id, i));
+    topHierarchyIssues.forEach((i) => issuesMap.set(i.issue_id, i));
 
     const finalIssues = Array.from(issuesMap.values());
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Plus, Eye, Edit, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { Button } from "../../ui/cn/button";
 import { PageLayout } from "../../common/PageLayout";
@@ -31,6 +31,9 @@ export default function UserList({
   inistitute_id,
   toggleActions,
 }: UserListProps) {
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
+
   // --- Define table columns ---
   const UserTableColumns = [
     {
@@ -117,31 +120,57 @@ export default function UserList({
   const { user } = useAuth();
   const positionId = getUserPositionId(logged_user_type, user_type, false);
 
-  // user_position_id
-  const { data, isLoading, isError } = useGetUsersQuery({
-    institute_id: user?.institute?.institute_id || inistitute_id,
-    user_position_id: user_position_id || positionId,
-    user_type_id: user_type_id,
-  });
-  // useGetUsersByInstituteIdQuery
-  const [response, setResponse] = useState<User[]>([]);
-  const [filteredResponse, setFilteredResponse] = useState<User[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [isModalOpen, setModalOpen] = useState(false);
-
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageSize: 10,
     pageCount: 1,
   });
 
+  // user_position_id
+  const { data, isLoading, isError, refetch } = useGetUsersQuery({
+    institute_id: user?.institute?.institute_id || inistitute_id,
+    user_position_id: user_position_id || positionId,
+    user_type_id: user_type_id,
+    search: searchQuery,
+    page: pageDetail.pageIndex + 1,
+    pageSize: pageDetail.pageSize,
+  });
+
+  useEffect(() => {
+    refetch();
+  }, [searchQuery, pageDetail.pageIndex, pageDetail.pageSize, refetch]);
+  // useGetUsersByInstituteIdQuery
+  const [response, setResponse] = useState<User[]>([]);
+  const [filteredResponse, setFilteredResponse] = useState<User[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isModalOpen, setModalOpen] = useState(false);
+
   // --- Convert API data to array ---
   useEffect(() => {
-    if (!isError && !isLoading && data?.data) {
-      setResponse(data.data);
-      setFilteredResponse(data.data);
+    if (!isError && !isLoading && data) {
+      const users = Array.isArray(data) ? data : data.data || [];
+      setResponse(users);
+
+      const filtered = users.filter((user) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "active") return user.is_active;
+        if (statusFilter === "inactive") return !user.is_active;
+        return true;
+      });
+      setFilteredResponse(filtered);
+      if (data.meta) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.meta.totalPages || 1,
+        }));
+      } else if (data.pageCount !== undefined) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.pageCount,
+        }));
+      }
     }
-  }, [data, isError, isLoading]);
+  }, [data, isError, isLoading, statusFilter]);
 
   // --- Filter by status ---
   useEffect(() => {
@@ -155,7 +184,11 @@ export default function UserList({
   }, [response, statusFilter]);
 
   const handlePagination = (pageIndex: number, pageSize: number) => {
-    setPageDetail({ ...pageDetail, pageIndex, pageSize });
+    setPageDetail((prev) => ({
+      ...prev,
+      pageIndex,
+      pageSize,
+    }));
   };
 
   const buttonLabel = toggleActions
@@ -206,6 +239,7 @@ export default function UserList({
           tablePageSize={pageDetail.pageSize}
           totalPageCount={pageDetail.pageCount}
           currentIndex={pageDetail.pageIndex}
+          isLoading={isLoading}
         />
       </PageLayout>
 

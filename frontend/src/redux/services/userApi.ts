@@ -49,6 +49,19 @@ export interface User {
   institute?: Institute;
   hierarchyNode?: HierarchyNode;
 }
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  message: string;
+  data: T[];
+  meta?: PaginationMeta;
+}
 
 export interface CreateUserDto {
   full_name: string;
@@ -83,30 +96,38 @@ export interface GetUsersParams {
   hierarchy_node_id?: string;
   is_active?: boolean;
   search?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 // --------------------- API ---------------------
 export const userApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Get all users (with optional filters)
-    getUsers: builder.query<User[], GetUsersParams | void>({
+    getUsers: builder.query<PaginatedResponse<User>, GetUsersParams | void>({
       query: (params) => {
         if (!params || Object.keys(params).length === 0) {
           // No filters passed → fetch all users
-          return `/users`;
+          return `/users?page=1&pageSize=10`;
         }
 
         // Build query string from params
-        const queryString =
-          "?" +
-          new URLSearchParams(
-            Object.entries(params).reduce((acc, [key, value]) => {
-              if (value !== undefined && value !== null)
-                acc[key] = String(value);
-              return acc;
-            }, {} as Record<string, string>)
-          ).toString();
+        const queryParams: Record<string, string> = {};
 
+        if (params.institute_id) queryParams.institute_id = params.institute_id;
+        if (params.user_type_id) queryParams.user_type_id = params.user_type_id;
+        if (params.user_position_id)
+          queryParams.user_position_id = params.user_position_id;
+        if (params.hierarchy_node_id)
+          queryParams.hierarchy_node_id = params.hierarchy_node_id;
+        if (params.is_active !== undefined)
+          queryParams.is_active = params.is_active.toString();
+        if (params.search) queryParams.search = params.search;
+
+        queryParams.page = (params.page || 1).toString();
+        queryParams.pageSize = (params.pageSize || 10).toString();
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
         return `/users${queryString}`;
       },
       providesTags: ["User"],
@@ -195,7 +216,10 @@ export const userApi = baseApi.injectEndpoints({
     }),
 
     // Update user
-    updateUser: builder.mutation<User, { user_id: string; data: UpdateUserDto }>({
+    updateUser: builder.mutation<
+      User,
+      { user_id: string; data: UpdateUserDto }
+    >({
       query: ({ user_id, data }) => ({
         url: `/users/${user_id}`,
         method: "PUT",

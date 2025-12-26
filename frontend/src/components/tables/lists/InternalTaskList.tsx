@@ -100,7 +100,6 @@ const TaskTableColumns = [
 ];
 
 export default function InternalTaskList() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   console.log("user logged auth: ", user);
   const [statusFilter, setStatusFilter] = useState<string>("all");

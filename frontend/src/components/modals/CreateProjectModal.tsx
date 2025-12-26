@@ -90,11 +90,10 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     const newIds = currentIds.includes(metricId)
       ? currentIds.filter((id) => id !== metricId)
       : [...currentIds, metricId];
-      setValue("project_metrics_ids", newIds, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      
+    setValue("project_metrics_ids", newIds, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
   };
 
   const handleSelectAll = () => {
@@ -212,7 +211,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     )
   );
   CustomDateInput.displayName = "CustomDateInput";
-  
+
   if (!isOpen) return null;
 
   return (
