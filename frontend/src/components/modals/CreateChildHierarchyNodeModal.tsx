@@ -63,7 +63,7 @@ export function CreateChildHierarchyNodeModal({
       <div className="bg-white p-6 rounded-lg shadow-lg w-[400px] max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-[#094C81]">
-            Create Child
+            Create Childaaa
           </h2>
           <button
             onClick={onClose}
