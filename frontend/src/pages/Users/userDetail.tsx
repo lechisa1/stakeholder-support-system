@@ -142,13 +142,14 @@ const UserDetail = () => {
   });
 
   // Fetch additional data for editing
-  const { data: institutes, isLoading: loadingInstitutes } =
+  const { data: institutesData, isLoading: loadingInstitutes } =
     useGetInstitutesQuery();
   const { data: metricsData, isLoading: loadingMetrics } =
     useGetProjectMetricsQuery({});
   const { data: rolesResponse } = useGetRolesQuery({});
+  const institutes = institutesData?.data || [];
   const allRoles = rolesResponse?.data || [];
-  const metrics: ProjectMetric[] = metricsData || [];
+  const metrics: ProjectMetric[] = metricsData?.data || [];
   const { data: userTypes = [] } = useGetUserTypesQuery({});
   const selectedUserType = userTypes?.data?.find(
     (type: any) => type.user_type_id === editForm.user_type_id
