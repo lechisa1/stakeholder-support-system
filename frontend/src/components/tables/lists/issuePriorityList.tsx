@@ -153,7 +153,6 @@ export default function IssuePriorityList() {
                   setDeleteModalOpen(true);
                   setDeletePriorityId(priority.priority_id);
                 }}
-                disabled={!priority.is_active}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

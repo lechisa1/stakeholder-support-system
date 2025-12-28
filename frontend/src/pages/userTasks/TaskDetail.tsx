@@ -276,10 +276,12 @@ export default function UserTaskDetail() {
 
   return (
     <>
-    <DetailHeader breadcrumbs={[
-        { title: "Task List", link: "" },
-        { title: "Task Detail", link: "" },
-      ]} />
+      <DetailHeader
+        breadcrumbs={[
+          { title: "Task List", link: "" },
+          { title: "Task Detail", link: "" },
+        ]}
+      />
       <PageMeta
         title={t("CATask.ca_task_detail")}
         description={t("CATask.ca_task_detail", {
@@ -327,38 +329,28 @@ export default function UserTaskDetail() {
                 </div>
               </div>
 
-              <div
-                className="border border-[#BFD7EA] rounded-lg p-6 mb-6"
-              >
+              <div className="border border-[#BFD7EA] rounded-lg p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                   <div>
-                    <p className="font-semibold text-[#1E516A] ">
-                      System
-                    </p>
+                    <p className="font-semibold text-[#1E516A] ">System</p>
                     <p className="text-gray-700 text-sm">
                       {issue.project?.name || "N/A"}
                     </p>
                   </div>
                   <div>
-                    <p className="font-semibold text-[#1E516A] ">
-                      Category
-                    </p>
+                    <p className="font-semibold text-[#1E516A] ">Category</p>
                     <p className="text-gray-700 text-sm">
                       {issue.category?.name || "N/A"}
                     </p>
                   </div>
                   <div>
-                    <p className="font-semibold text-[#1E516A] ">
-                      Reported By
-                    </p>
+                    <p className="font-semibold text-[#1E516A] ">Reported By</p>
                     <p className="text-gray-700 text-sm">
                       {issue.reporter?.full_name || "N/A"}
                     </p>
                   </div>
                   <div>
-                    <p className="font-semibold text-[#1E516A] ">
-                      Reported On
-                    </p>
+                    <p className="font-semibold text-[#1E516A] ">Reported On</p>
                     <p className="text-gray-700 text-sm">
                       {formatDate(issue.issue_occured_time)}
                     </p>
@@ -379,16 +371,16 @@ export default function UserTaskDetail() {
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-50 border border-[#BFD7EA] rounded-md p-3 text-gray-700">
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
+                  <div className="bg-slate-50 border border-[#BFD7EA] rounded-md p-3 text-gray-700 min-w-0">
                     <p className="font-semibold text-[#1E516A] text-sm mb-1">
                       Description
                     </p>
-                    <p className="text-gray-700 text-wrap whitespace-pre-line">
-                    {issue.description ||
-                      issue.title ||
-                      "No description provided"}
-                      </p>
+                    <p className="text-gray-700 whitespace-pre-line overflow-wrap-anywhere">
+                      {issue.description ||
+                        issue.title ||
+                        "No description provided"}
+                    </p>
                   </div>
 
                   <div className="bg-slate-50 border border-[#BFD7EA] rounded-md p-3 text-gray-700">
@@ -396,7 +388,7 @@ export default function UserTaskDetail() {
                       Action Taken
                     </p>
                     <p className="text-gray-700 text-wrap whitespace-pre-line">
-                    {issue.action_taken || "No action taken yet"}
+                      {issue.action_taken || "No action taken yet"}
                     </p>
                   </div>
                 </div>
@@ -710,7 +702,8 @@ export default function UserTaskDetail() {
                                           {formatDate(resolution.resolved_at)}
                                         </span>
                                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                          {formatStatus(resolution.status) || "resolved"}
+                                          {formatStatus(resolution.status) ||
+                                            "resolved"}
                                         </span>
                                       </div>
                                     </div>
@@ -870,35 +863,47 @@ export default function UserTaskDetail() {
             </div>
           </div>
 
-          {/* File Viewer Modal with next/prev navigation (like IssueDetail) */}
+          {/* File Viewer Modal with next/prev navigation */}
           {fileViewerState && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 bg-opacity-75 p-4">
-              <div className="bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col">
-                <div className="flex justify-between items-center p-4 border-b">
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  closeFileViewer();
+                }
+              }}
+            >
+              <div
+                className="bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col relative overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center p-4 border-b shrink-0">
                   <h3 className="text-lg font-semibold text-[#1E516A]">
-                    File Preview{" "}
-                    <span className="text-xs text-gray-500">
-                      ({fileViewerState.files[fileViewerState.index].name})
+                    File Preview <span className="text-xs text-gray-500">
+                    ({fileViewerState.files[fileViewerState.index].name})
                     </span>
                   </h3>
                   <button
                     onClick={closeFileViewer}
-                    className="p-2 hover:bg-gray-100 rounded-full"
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <div className="flex-1 p-4 flex flex-col">
-                  <div className="flex-1">
-                    <FileViewer
-                      fileUrl={fileViewerState.files[fileViewerState.index].url}
-                    />
+                <div className="flex-1 p-4 flex flex-col relative overflow-hidden min-h-0">
+                  <div className="flex-1 overflow-auto min-h-0">
+                    <div className="h-full w-full flex items-center justify-center">
+                      <FileViewer
+                        fileUrl={fileViewerState.files[fileViewerState.index].url}
+                      />
+                    </div>
                   </div>
                   {fileViewerState.files.length > 1 && (
-                    <div className="mt-4 flex items-center justify-between">
+                    <>
                       <button
-                        className="flex items-center gap-1 px-3 py-1 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() =>
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors z-10"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setFileViewerState((prev) =>
                             !prev
                               ? prev
@@ -908,33 +913,32 @@ export default function UserTaskDetail() {
                                     (prev.index - 1 + prev.files.length) %
                                     prev.files.length,
                                 }
-                          )
-                        }
+                          );
+                        }}
                       >
-                        <ChevronLeft className="w-4 h-4" />
-                        Previous
+                        <ChevronLeft className="w-6 h-6" />
                       </button>
-                      <span className="text-xs text-gray-500">
-                        {fileViewerState.index + 1} /{" "}
-                        {fileViewerState.files.length}
-                      </span>
                       <button
-                        className="flex items-center gap-1 px-3 py-1 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() =>
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors z-10"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setFileViewerState((prev) =>
                             !prev
                               ? prev
                               : {
                                   ...prev,
-                                  index: (prev.index + 1) % prev.files.length,
+                                  index:
+                                    (prev.index + 1) % prev.files.length,
                                 }
-                          )
-                        }
+                          );
+                        }}
                       >
-                        Next
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-6 h-6" />
                       </button>
-                    </div>
+                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black/50 rounded-full px-3 py-1 text-sm z-10">
+                        {fileViewerState.index + 1} / {fileViewerState.files.length}
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
