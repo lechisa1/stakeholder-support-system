@@ -192,13 +192,17 @@ export default function UserList({
       pageSize,
     }));
   };
+  const isLoggedExternal = logged_user_type === "external_user";
+  const isCreatingInternal = user_type === "internal_user";
 
+  const label = isLoggedExternal
+    ? "Create User"
+    : isCreatingInternal
+    ? "Create Internal User"
+    : "Create External User";
   const actions: ActionButton[] = [
     {
-      label:
-        user_type === "internal_user"
-          ? "Create Internal User"
-          : "Create External User",
+      label: label,
       icon: <Plus className="h-4 w-4" />,
       onClick: () => {
         if (user_type === "external_user") {
