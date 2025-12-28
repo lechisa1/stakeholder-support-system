@@ -218,36 +218,323 @@ const getIssues = async (req, res) => {
 // ================================
 // GET ALL ISSUES BY USER ID
 // ================================
+// const getIssuesByUserId = async (req, res) => {
+//   try {
+//     const { id: user_id } = req.params;
+
+//     const whereClause = {};
+//     if (user_id) whereClause.reported_by = user_id;
+
+//     const issues = await Issue.findAll({
+//       where: whereClause,
+//       include: [
+//         { model: Project, as: "project" },
+//         { model: IssueCategory, as: "category" },
+//         { model: IssuePriority, as: "priority" },
+//         { model: HierarchyNode, as: "hierarchyNode" },
+//         { model: User, as: "reporter" },
+//         { model: User, as: "assignee" },
+//         // Comments
+//         {
+//           model: IssueComment,
+//           as: "comments",
+//           include: [{ model: User, as: "author" }],
+//         },
+//       ],
+//       order: [["created_at", "DESC"]],
+//     });
+
+//     res.status(200).json(issues);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+// ================================
+// GET ALL ISSUES BY USER ID
+// ================================
 const getIssuesByUserId = async (req, res) => {
   try {
     const { id: user_id } = req.params;
 
-    const whereClause = {};
-    if (user_id) whereClause.reported_by = user_id;
+    // ====== Get search and pagination from query params ======
+    const {
+      search, // optional: for ticket number, priority, category, etc.
+      page = 1,
+      pageSize = 10,
+    } = req.query;
 
-    const issues = await Issue.findAll({
-      where: whereClause,
-      include: [
-        { model: Project, as: "project" },
-        { model: IssueCategory, as: "category" },
-        { model: IssuePriority, as: "priority" },
-        { model: HierarchyNode, as: "hierarchyNode" },
-        { model: User, as: "reporter" },
-        { model: User, as: "assignee" },
-        // Comments
-        {
-          model: IssueComment,
-          as: "comments",
-          include: [{ model: User, as: "author" }],
+    if (!user_id) {
+      return res.status(400).json({
+        message: "User ID parameter is required",
+      });
+    }
+
+    // ====== Calculate pagination ======
+    const pageNum = parseInt(page);
+    const limit = parseInt(pageSize);
+    const offset = (pageNum - 1) * limit;
+
+    // ====== SIMPLIFIED APPROACH: Handle search separately ======
+    if (search) {
+      // Step 1: Find issue IDs that match the search in Issue table
+      const matchingIssuesDirect = await Issue.findAll({
+        where: {
+          reported_by: user_id,
+          [Op.or]: [{ ticket_number: { [Op.iLike]: `%${search}%` } }],
         },
-      ],
-      order: [["created_at", "DESC"]],
-    });
+        attributes: ["issue_id"],
+        raw: true,
+      });
 
-    res.status(200).json(issues);
+      // Step 2: Find issue IDs through related tables
+      const matchingThroughPriority = await Issue.findAll({
+        where: { reported_by: user_id },
+        include: [
+          {
+            model: IssuePriority,
+            as: "priority",
+            where: { name: { [Op.iLike]: `%${search}%` } },
+            required: true,
+            attributes: [],
+          },
+        ],
+        attributes: ["issue_id"],
+        raw: true,
+      });
+
+      const matchingThroughCategory = await Issue.findAll({
+        where: { reported_by: user_id },
+        include: [
+          {
+            model: IssueCategory,
+            as: "category",
+            where: { name: { [Op.iLike]: `%${search}%` } },
+            required: true,
+            attributes: [],
+          },
+        ],
+        attributes: ["issue_id"],
+        raw: true,
+      });
+
+      const matchingThroughHierarchy = await Issue.findAll({
+        where: { reported_by: user_id },
+        include: [
+          {
+            model: HierarchyNode,
+            as: "hierarchyNode",
+            where: { name: { [Op.iLike]: `%${search}%` } },
+            required: true,
+            attributes: [],
+          },
+        ],
+        attributes: ["issue_id"],
+        raw: true,
+      });
+
+      const matchingThroughProject = await Issue.findAll({
+        where: { reported_by: user_id },
+        include: [
+          {
+            model: Project,
+            as: "project",
+            where: { name: { [Op.iLike]: `%${search}%` } },
+            required: true,
+            attributes: [],
+          },
+        ],
+        attributes: ["issue_id"],
+        raw: true,
+      });
+
+      const matchingThroughAssignee = await Issue.findAll({
+        where: { reported_by: user_id },
+        include: [
+          {
+            model: User,
+            as: "reporter",
+            where: {
+              [Op.or]: [
+                { full_name: { [Op.iLike]: `%${search}%` } },
+                { email: { [Op.iLike]: `%${search}%` } },
+              ],
+            },
+            required: true,
+            attributes: [],
+          },
+        ],
+        attributes: ["issue_id"],
+        raw: true,
+      });
+
+      // Combine all matching issue IDs
+      const allMatchingIds = new Set();
+
+      [
+        ...matchingIssuesDirect,
+        ...matchingThroughPriority,
+        ...matchingThroughCategory,
+        ...matchingThroughHierarchy,
+        ...matchingThroughProject,
+        ...matchingThroughAssignee,
+      ].forEach((issue) => {
+        allMatchingIds.add(issue.issue_id);
+      });
+
+      const matchingIssueIds = Array.from(allMatchingIds);
+
+      if (matchingIssueIds.length === 0) {
+        return res.status(200).json({
+          success: true,
+          message: "No issues found matching search criteria.",
+          search_query: search,
+          user_id: user_id,
+          count: 0,
+          total_count: 0,
+          data: [],
+          meta: {
+            page: pageNum,
+            pageSize: limit,
+            total: 0,
+            totalPages: 0,
+          },
+        });
+      }
+
+      // Get paginated issues with all includes
+      const { rows: issues, count: totalCount } = await Issue.findAndCountAll({
+        where: {
+          issue_id: { [Op.in]: matchingIssueIds },
+        },
+        include: [
+          {
+            model: Project,
+            as: "project",
+          },
+          {
+            model: IssueCategory,
+            as: "category",
+          },
+          {
+            model: IssuePriority,
+            as: "priority",
+          },
+          {
+            model: HierarchyNode,
+            as: "hierarchyNode",
+          },
+          {
+            model: User,
+            as: "reporter",
+            attributes: ["user_id", "full_name", "email"],
+          },
+          {
+            model: User,
+            as: "assignee",
+            attributes: ["user_id", "full_name", "email"],
+          },
+          // Comments with author
+          {
+            model: IssueComment,
+            as: "comments",
+            include: [{ model: User, as: "author" }],
+          },
+        ],
+        order: [["created_at", "DESC"]],
+        limit: limit,
+        offset: offset,
+        distinct: true,
+      });
+
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return res.status(200).json({
+        success: true,
+        message: "Issues fetched successfully.",
+        search_query: search,
+        user_id: user_id,
+        count: issues.length,
+        total_count: totalCount,
+        data: issues,
+        meta: {
+          page: pageNum,
+          pageSize: limit,
+          total: totalCount,
+          totalPages: totalPages,
+        },
+      });
+    } else {
+      // ======================================================
+      // NO SEARCH - Original logic with pagination
+      // ======================================================
+      const { rows: issues, count: totalCount } = await Issue.findAndCountAll({
+        where: { reported_by: user_id },
+        include: [
+          {
+            model: Project,
+            as: "project",
+          },
+          {
+            model: IssueCategory,
+            as: "category",
+          },
+          {
+            model: IssuePriority,
+            as: "priority",
+          },
+          {
+            model: HierarchyNode,
+            as: "hierarchyNode",
+          },
+          {
+            model: User,
+            as: "reporter",
+            attributes: ["user_id", "full_name", "email"],
+          },
+          {
+            model: User,
+            as: "assignee",
+            attributes: ["user_id", "full_name", "email"],
+          },
+          // Comments with author
+          {
+            model: IssueComment,
+            as: "comments",
+            include: [{ model: User, as: "author" }],
+          },
+        ],
+        order: [["created_at", "DESC"]],
+        limit: limit,
+        offset: offset,
+        distinct: true,
+      });
+
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return res.status(200).json({
+        success: true,
+        message: "Issues fetched successfully.",
+        user_id: user_id,
+        count: issues.length,
+        total_count: totalCount,
+        data: issues,
+        meta: {
+          page: pageNum,
+          pageSize: limit,
+          total: totalCount,
+          totalPages: totalPages,
+        },
+      });
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
+    console.error("Error fetching issues by user ID:", error);
+    return res.status(500).json({
+      success: false,
       message: "Internal server error",
       error: error.message,
     });

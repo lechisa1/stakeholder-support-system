@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Eye, Edit, Trash2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   useGetIssuesByUserIdQuery,
@@ -14,12 +14,12 @@ import { DataTable } from "../../common/CommonTable";
 import { ActionButton, FilterField } from "../../../types/layout";
 import { useGetCurrentUserQuery } from "../../../redux/services/authApi";
 import { formatStatus } from "../../../utils/statusFormatter";
+import { Issue, PaginatedResponse } from "../../../redux/services/issueApi";
 
 // --- Define table columns ---
-// ticket_number
 const IssueTableColumns = [
   {
-    accessorKey: "project.ticket_number",
+    accessorKey: "ticket_number",
     header: "Ticket Number",
     cell: ({ row }: any) => <div>{row.original.ticket_number || "N/A"}</div>,
   },
@@ -38,7 +38,6 @@ const IssueTableColumns = [
     header: "Priority",
     cell: ({ row }: any) => <div>{row.original.priority?.name || "N/A"}</div>,
   },
-
   {
     accessorKey: "status",
     header: "Status",
@@ -70,19 +69,6 @@ const IssueTableColumns = [
               <Eye className="h-4 w-4" />
             </Link>
           </Button>
-          {/* <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
-            <Link to={`/issues/edit/${issue.issue_id}`}>
-              <Edit className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-            onClick={() => console.log("Delete issue:", issue.issue_id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button> */}
         </div>
       );
     },
@@ -91,8 +77,11 @@ const IssueTableColumns = [
 
 export default function IssueList() {
   const navigate = useNavigate();
-  const [response, setResponse] = useState<any[]>([]);
-  const [filteredResponse, setFilteredResponse] = useState<any[]>([]);
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
+
+  const [response, setResponse] = useState<Issue[]>([]);
+  const [filteredResponse, setFilteredResponse] = useState<Issue[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
@@ -119,6 +108,7 @@ export default function IssueList() {
       label: "Status",
       type: "multiselect",
       options: [
+        { label: "All", value: "all" },
         { label: "Pending", value: "pending" },
         { label: "Resolved", value: "resolved" },
         { label: "Closed", value: "closed" },
@@ -131,8 +121,14 @@ export default function IssueList() {
     },
   ];
 
+  // Use the query with pagination and search
   const { isLoading, isError, data } = useGetIssuesByUserIdQuery(
-    loggedUser?.user?.user_id ?? "",
+    {
+      id: loggedUser?.user?.user_id ?? "",
+      search: searchQuery,
+      page: pageDetail.pageIndex + 1,
+      pageSize: pageDetail.pageSize,
+    },
     {
       skip: !loggedUser?.user?.user_id,
     }
@@ -140,13 +136,34 @@ export default function IssueList() {
 
   useEffect(() => {
     if (!isError && !isLoading && data) {
-      setResponse(data);
-      setFilteredResponse(data);
+      // Handle both paginated and non-paginated responses
+      if ("data" in data && "meta" in data) {
+        // Paginated response
+        const paginatedData = data as PaginatedResponse<Issue>;
+        setResponse(paginatedData.data || []);
+
+        // Update pagination meta
+        if (paginatedData.meta) {
+          setPageDetail((prev) => ({
+            ...prev,
+            pageCount: paginatedData.meta.totalPages || 1,
+          }));
+        }
+      } else {
+        // Regular array response (backward compatibility)
+        const issues = Array.isArray(data) ? data : [];
+        setResponse(issues);
+      }
     }
   }, [data, isError, isLoading]);
 
   // Apply status filter
   useEffect(() => {
+    if (response.length === 0) {
+      setFilteredResponse([]);
+      return;
+    }
+
     const filtered = response.filter((item) => {
       if (!statusFilter || statusFilter === "all") return true;
       return item.status === statusFilter;
@@ -164,7 +181,7 @@ export default function IssueList() {
       filterColumnsPerRow={1}
       actions={actions}
       title="Issue List"
-      description="List of all issues"
+      description="List of all your reported issues"
     >
       <DataTable
         columns={IssueTableColumns}
@@ -173,6 +190,7 @@ export default function IssueList() {
         tablePageSize={pageDetail.pageSize}
         totalPageCount={pageDetail.pageCount}
         currentIndex={pageDetail.pageIndex}
+        isLoading={isLoading}
       />
     </PageLayout>
   );

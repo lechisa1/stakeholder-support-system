@@ -25,6 +25,12 @@ export interface IssuesByProjectIdsParams {
   page?: number;
   pageSize?: number;
 }
+export interface GetIssuesByUserIdParams {
+  id: string; // user ID
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
 
 export interface Issue {
   issue_id: string;
@@ -113,10 +119,29 @@ export const issueApi = baseApi.injectEndpoints({
         { type: "Issue", id: ticket_number },
       ],
     }),
-    getIssuesByUserId: builder.query<Issue[], string>({
-      query: (userId) => `/issues/user/${userId}`,
+
+    getIssuesByUserId: builder.query<
+      Issue[] | PaginatedResponse<Issue>,
+      GetIssuesByUserIdParams
+    >({
+      query: ({ id, search, page = 1, pageSize = 10 }) => {
+        // Build query string
+        const queryParams: Record<string, string> = {};
+        queryParams.page = page.toString();
+        queryParams.pageSize = pageSize.toString();
+
+        if (search) queryParams.search = search;
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/issues/user/${id}${queryString}`;
+      },
       providesTags: ["Issue"],
     }),
+
+    // getIssuesByUserId: builder.query<Issue[], string>({
+    //   query: (userId) => `/issues/user/${userId}`,
+    //   providesTags: ["Issue"],
+    // }),
 
     // ⭐ NEW — Get issues assigned via IssueAssignment
     getAssignedIssues: builder.query<Issue[], string>({

@@ -67,12 +67,11 @@ export default function AddIssue() {
   const priorities = prioritiesResponse?.data ?? [];
 
   const { data: categoryResponse } = useGetIssueCategoriesQuery();
-  const categories = categoryResponse ?? [];
+  const categories = categoryResponse?.data ?? [];
 
   // API Mutations for create / update
   const [createIssue] = useCreateIssueMutation();
   const [updateIssue] = useUpdateIssueMutation();
-
 
   const [showPriorityModal, setShowPriorityModal] = useState(false);
   const [tempPriority, setTempPriority] = useState("");
@@ -234,7 +233,9 @@ export default function AddIssue() {
       />
       <div className="w-full p-6 bg-white rounded-2xl border border-gray-200 dark:bg-gray-900">
         <div className="mb-5">
-          <h2 className="text-xl font-bold text-[#094C81]">Create New Support Request</h2>
+          <h2 className="text-xl font-bold text-[#094C81]">
+            Create New Support Request
+          </h2>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -447,10 +448,7 @@ export default function AddIssue() {
                 }`}
               >
                 {isSubmitting ? (
-                  <>
-                    
-                    Submitting...
-                  </>
+                  <>Submitting...</>
                 ) : editData ? (
                   "Update"
                 ) : (
