@@ -126,14 +126,14 @@ export const breadcrumbConfig: Record<string, BreadcrumbItem[]> = {
   // The institute ID would need to come from project data
  
 
-  "/my_issue": [{ title: "My Issues", path: "/my_issue" }],
+  "/my_requests": [{ title: "My Requests", path: "/my_requests" }],
   "/add_issue": [
-    { title: "My Issues", path: "/my_issue" },
-    { title: "Create Issue", path: "" },
+    { title: "My Requests", path: "/my_requests" },
+    { title: "Create Request", path: "" },
   ],
   "/issue/:id": [
-    { title: "My Issues", path: "/my_issue" },
-    { title: "Issue Details", path: "" },
+    { title: "My Requests", path: "/my_requests" },
+    { title: "Request Details", path: "" },
   ],
   "/task": [{ title: "Tasks", path: "/task" }],
   "/task/:id": [

@@ -29,6 +29,12 @@ import TextArea from "../../components/form/input/TextArea";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  myIssueFormSchema,
+  type MyIssueFormData,
+} from "../../utils/validation/schemas";
 
 export default function AddIssue() {
   const { t } = useTranslation();
@@ -74,76 +80,95 @@ export default function AddIssue() {
   const [updateIssue] = useUpdateIssueMutation();
 
   const [showPriorityModal, setShowPriorityModal] = useState(false);
-  const [tempPriority, setTempPriority] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tempPriorityId, setTempPriorityId] = useState("");
 
-  // Form state
-  const [formValues, setFormValues] = useState<Record<string, any>>({
-    title: "title",
-    project_id: editData?.project_id ?? "",
-    hierarchy_node_id: editData?.hierarchy_node_id ?? "",
-    issue_category_id: editData?.issue_category_id ?? "",
-    priority_id: editData?.priority_id ?? "",
-    issue_occured_time: editData?.issue_occured_time ?? "",
-    url_path: editData?.url_path ?? "",
-    description: editData?.description ?? "",
-    action_taken: editData?.action_taken ?? "",
-    action_taken_checkbox: !!editData?.action_taken,
-    attachment_id: editData?.attachment_id
-      ? Array.isArray(editData.attachment_id)
-        ? editData.attachment_id
-        : [editData.attachment_id]
-      : [],
-    reported_by: loggedUser?.user?.user_id ?? "",
+  // Form state with react-hook-form
+  const {
+    register,
+    handleSubmit: handleFormSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<MyIssueFormData>({
+    resolver: zodResolver(myIssueFormSchema),
+    mode: "onSubmit",
+    reValidateMode: "onChange",
+    defaultValues: {
+      project_id: editData?.project_id ?? "",
+      hierarchy_node_id: editData?.hierarchy_node_id ?? "",
+      issue_category_id: editData?.issue_category_id ?? "",
+      priority_id: editData?.priority_id ?? "",
+      issue_occured_time:
+        editData?.issue_occured_time ??
+        format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      url_path: editData?.url_path ?? "",
+      description: editData?.description ?? "",
+      action_taken: editData?.action_taken ?? "",
+      action_taken_checkbox: !!editData?.action_taken,
+      attachment_id: editData?.attachment_id
+        ? Array.isArray(editData.attachment_id)
+          ? editData.attachment_id
+          : [editData.attachment_id]
+        : [],
+    },
   });
 
+  const formValues = watch();
+
   const handleChange = (id: string, value: any) => {
-    setFormValues((prev) => ({ ...prev, [id]: value }));
+    setValue(id as keyof MyIssueFormData, value, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
   };
   useEffect(() => {
-    // Auto-select project if only one available
-    if (userProjects.length === 1 && !formValues.project_id) {
+    const currentMaxDateTime = format(new Date(), "yyyy-MM-dd'T'HH:mm");
+    
+    // Auto-select project if only one available and not already set
+    if (userProjects.length === 1 && (!formValues.project_id || formValues.project_id === "")) {
       const singleProject = userProjects[0];
-      handleChange("project_id", singleProject.project_id);
-      handleChange(
+      setValue("project_id", singleProject.project_id, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      
+      setValue(
         "hierarchy_node_id",
-        singleProject.hierarchyNode?.hierarchy_node_id ?? null
+        singleProject.hierarchyNode?.hierarchy_node_id ?? null,
+        { shouldValidate: false }
       );
     }
-
-    // Auto-select category if only one available
-    if (categories.length === 1 && !formValues.issue_category_id) {
-      handleChange("issue_category_id", categories[0].category_id);
+  
+    // Auto-select category if only one available and not already set
+    if (categories.length === 1 && (!formValues.issue_category_id || formValues.issue_category_id === "")) {
+      setValue("issue_category_id", categories[0].category_id, { shouldValidate: false });
     }
-
-    // Auto-select priority if only one available
-    if (priorities.length === 1 && !formValues.priority_id) {
-      handleChange("priority_id", priorities[0].priority_id);
+  
+    // Auto-select priority if only one available and not already set
+    if (priorities.length === 1 && (!formValues.priority_id || formValues.priority_id === "")) {
+      setValue("priority_id", priorities[0].priority_id, { shouldValidate: false });
     }
+    
     // Auto-fill current date/time on initial load
-    if (!formValues.issue_occured_time) {
-      handleChange("issue_occured_time", maxDateTime);
+    if (!formValues.issue_occured_time || formValues.issue_occured_time === "") {
+      setValue("issue_occured_time", currentMaxDateTime, { shouldValidate: false });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userProjects, categories, priorities]);
 
   // Submit form
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+  const onSubmit = async (data: MyIssueFormData) => {
     const payload = {
-      title: formValues.title,
-      project_id: formValues.project_id,
-      hierarchy_node_id: formValues.hierarchy_node_id,
-      issue_category_id: formValues.issue_category_id,
-      priority_id: formValues.priority_id,
-      issue_occured_time: formValues.issue_occured_time,
-      description: formValues.description,
-      url_path: formValues.url_path,
-      action_taken: formValues.action_taken_checkbox
-        ? formValues.action_taken
-        : null,
-      attachment_ids: formValues.attachment_id,
+      title: "title",
+      project_id: data.project_id,
+      hierarchy_node_id: data.hierarchy_node_id,
+      issue_category_id: data.issue_category_id,
+      priority_id: data.priority_id,
+      issue_occured_time: data.issue_occured_time,
+      description: data.description,
+      url_path: data.url_path,
+      action_taken: data.action_taken_checkbox ? data.action_taken : undefined,
+      attachment_ids: data.attachment_id || [],
       reported_by: loggedUser?.user?.user_id ?? "",
     };
 
@@ -157,42 +182,55 @@ export default function AddIssue() {
       }
 
       setTimeout(() => {
-        navigate("/my_issue");
+        navigate("/my_requests");
       }, 1500);
-    } catch (error: any) {
-      toast.error(error?.data?.error || "Something went wrong");
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { data?: { error?: string } })?.data?.error ||
+        "Something went wrong";
+      toast.error(errorMessage);
     }
-    setIsSubmitting(false);
-  };
-
-  const handleReset = () => {
-    setFormValues({
-      title: "title",
-      project_id: "",
-      issue_category_id: "",
-      priority_id: "",
-      issue_occured_time: "",
-      description: "",
-      url_path: "",
-      action_taken: "",
-      action_taken_checkbox: false,
-      attachment_ids: [],
-    });
   };
 
   // Form fields
   const fields = [
-    { id: "project_id", label: "Select Project", type: "select" },
-    { id: "issue_category_id", label: "Select Category", type: "select" },
-    { id: "priority_id", label: "Priority Level", type: "select" },
+    {
+      id: "project_id",
+      label: "Select Project",
+      type: "select",
+      required: true,
+    },
+    {
+      id: "issue_category_id",
+      label: "Select Category",
+      type: "select",
+      required: true,
+    },
+    {
+      id: "priority_id",
+      label: "Priority Level",
+      type: "select",
+      required: true,
+    },
     {
       id: "issue_occured_time",
       label: "Date and Time Issue Happened",
       type: "datetime",
+      required: true,
     },
-    { id: "action_taken", label: "Action Taken", type: "textarea" },
-    { id: "url_path", label: "Add url", type: "url" },
-    { id: "description", label: "Description", type: "textarea" },
+    {
+      id: "action_taken",
+      label: "Action Taken",
+      type: "textarea",
+      required: true,
+    },
+    { id: "url_path", label: "Add url", type: "url", required: false },
+    {
+      id: "description",
+      label: "Description",
+      type: "textarea",
+      required: true,
+    },
   ];
   const guidelines = [
     {
@@ -220,8 +258,6 @@ export default function AddIssue() {
     },
   ];
 
-  const maxDateTime = format(new Date(), "yyyy-MM-dd'T'HH:mm");
-
   return (
     <>
       <DetailHeader
@@ -241,7 +277,7 @@ export default function AddIssue() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* FORM */}
           <form
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit(onSubmit)}
             className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 h-fit bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg"
           >
             {/* Dynamic Fields */}
@@ -250,128 +286,180 @@ export default function AddIssue() {
               .map((field) => (
                 <div key={field.id} className="flex h-fit flex-col w-full">
                   <Label className="text-sm font-medium text-[#094C81]">
-                    {field.label}
+                    {field.label}{" "}
+                    {field.required && <span className="text-red-500">*</span>}
                   </Label>
 
                   {field.type === "select" && field.id === "project_id" && (
-                    <Select
-                      value={formValues.project_id}
-                      onValueChange={(selectedProjectId) => {
-                        const selectedProject = userProjects.find(
-                          (p) => p.project_id === selectedProjectId
-                        );
+                    <div className="w-full">
+                      <Select
+                        value={formValues.project_id}
+                        onValueChange={(selectedProjectId) => {
+                          const selectedProject = userProjects.find(
+                            (p) => p.project_id === selectedProjectId
+                          );
 
-                        handleChange("project_id", selectedProjectId);
-                        handleChange(
-                          "hierarchy_node_id",
-                          selectedProject?.hierarchyNode?.hierarchy_node_id ??
-                            null
-                        );
-                      }}
-                    >
-                      <SelectTrigger className=" border h-10 border-gray-300 bg-white p-2 rounded mt-1 text-gray-700">
-                        <SelectValue placeholder="Select Project" />
-                      </SelectTrigger>
+                          handleChange("project_id", selectedProjectId);
+                          handleChange(
+                            "hierarchy_node_id",
+                            selectedProject?.hierarchyNode?.hierarchy_node_id ??
+                              null
+                          );
+                        }}
+                      >
+                        <SelectTrigger
+                          className={`border h-10 bg-white p-2 rounded mt-1 text-gray-700 ${
+                            errors.project_id
+                              ? "border-red-300"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          <SelectValue placeholder="Select Project" />
+                        </SelectTrigger>
 
-                      <SelectContent className="text-[#094C81] *: bg-white">
-                        {userProjects.map((p) => (
-                          <SelectItem key={p.project_id} value={p.project_id}>
-                            {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <SelectContent className="text-[#094C81] *: bg-white">
+                          {userProjects.map((p) => (
+                            <SelectItem key={p.project_id} value={p.project_id}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.project_id && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {errors.project_id.message}
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {field.type === "select" &&
                     field.id === "issue_category_id" && (
                       // if the category list is
+                      <div className="w-full">
+                        <Select
+                          value={formValues.issue_category_id}
+                          onValueChange={(v) =>
+                            handleChange("issue_category_id", v)
+                          }
+                        >
+                          <SelectTrigger
+                            className={`h-10 border bg-white p-2 rounded mt-1 text-gray-700 ${
+                              errors.issue_category_id
+                                ? "border-red-300"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            <SelectValue placeholder="Select Category" />
+                          </SelectTrigger>
+
+                          <SelectContent className="text-[#094C81] *: bg-white">
+                            {categories.map((c) => (
+                              <SelectItem
+                                key={c.category_id}
+                                value={c.category_id}
+                              >
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.issue_category_id && (
+                          <p className="text-xs text-red-500 mt-1">
+                            {errors.issue_category_id.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                  {field.type === "select" && field.id === "priority_id" && (
+                    <div className="w-full">
                       <Select
-                        value={formValues.issue_category_id}
-                        onValueChange={(v) =>
-                          handleChange("issue_category_id", v)
-                        }
+                        value={formValues.priority_id}
+                        onValueChange={(value) => {
+                          setTempPriorityId(value);
+                          setShowPriorityModal(true);
+                        }}
                       >
-                        <SelectTrigger className=" h-10 border border-gray-300 bg-white p-2 rounded mt-1 text-gray-700">
-                          <SelectValue placeholder="Select Category" />
+                        <SelectTrigger
+                          className={`h-10 border bg-white p-2 rounded mt-1 text-gray-700 ${
+                            errors.priority_id
+                              ? "border-red-300"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          <SelectValue placeholder="Select Priority" />
                         </SelectTrigger>
 
                         <SelectContent className="text-[#094C81] *: bg-white">
-                          {categories.map((c) => (
+                          {priorities.map((p) => (
                             <SelectItem
-                              key={c.category_id}
-                              value={c.category_id}
+                              key={p.priority_id}
+                              value={p.priority_id}
                             >
-                              {c.name}
+                              {p.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    )}
-
-                  {field.type === "select" && field.id === "priority_id" && (
-                    <Select
-                      value={formValues.priority_id}
-                      onValueChange={(value) => {
-                        const selectedPriority = priorities.find(
-                          (p) => p.priority_id === value
-                        );
-
-                        if (
-                          selectedPriority?.name?.toLowerCase() === "high" ||
-                          selectedPriority?.name?.toLowerCase() === "critical"
-                        ) {
-                          setTempPriority(selectedPriority.name);
-                          setShowPriorityModal(true);
-                        } else {
-                          handleChange("priority_id", value);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className=" h-10 border border-gray-300 bg-white p-2 rounded mt-1  text-gray-700">
-                        <SelectValue placeholder="Select Priority" />
-                      </SelectTrigger>
-
-                      <SelectContent className="text-[#094C81] *: bg-white">
-                        {priorities.map((p) => (
-                          <SelectItem key={p.priority_id} value={p.priority_id}>
-                            {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {errors.priority_id && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {errors.priority_id.message}
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {field.type === "datetime" && (
-                    <Input
-                      id="issue_occured_time"
-                      type="datetime-local"
-                      max={maxDateTime}
-                      className="border text-[#094C81] h-10 max-w-[350px] rounded px-2 py-2"
-                      value={formValues.issue_occured_time}
-                      onChange={(e) =>
-                        handleChange("issue_occured_time", e.target.value)
-                      }
-                    />
+                    <div className="w-full">
+                      <Input
+                        id="issue_occured_time"
+                        type="datetime-local"
+                        max={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+                        className={`border text-[#094C81] h-10 rounded px-2 py-2 ${
+                          errors.issue_occured_time
+                            ? "border-red-300"
+                            : "border-gray-300"
+                        }`}
+                        {...register("issue_occured_time")}
+                        value={formValues.issue_occured_time}
+                        onChange={(e) =>
+                          handleChange("issue_occured_time", e.target.value)
+                        }
+                        error={!!errors.issue_occured_time}
+                        hint={errors.issue_occured_time?.message}
+                      />
+                    </div>
                   )}
 
-                  {field.type === "textarea" && (
-                    <TextArea
-                      rows={2}
-                      placeholder="Enter your action taken"
-                      className="border max-w-[350px] rounded px-2 py-2"
-                      value={formValues[field.id]}
-                      onChange={(e) => handleChange(field.id, e)}
-                    />
+                  {field.type === "textarea" && field.id === "description" && (
+                    <div className="w-full">
+                      <TextArea
+                        rows={2}
+                        placeholder="Enter description"
+                        className={`border   rounded px-2 py-2 ${
+                          errors.description
+                            ? "border-red-300"
+                            : "border-gray-300"
+                        }`}
+                        value={formValues.description || ""}
+                        onChange={(value) => {
+                          handleChange("description", value);
+                        }}
+                        error={!!errors.description}
+                        hint={errors.description?.message}
+                      />
+                    </div>
                   )}
 
                   {field.type === "url" && (
                     <Input
-                      type="url"
                       placeholder="Paste the URL"
                       value={formValues.url_path}
                       onChange={(e) => handleChange("url_path", e.target.value)}
-                      className="border h-10 max-w-[350px] rounded px-2 py-2 text-[#094C81]"
+                      className="border h-10   rounded px-2 py-2 text-[#094C81]"
+                      error={!!errors.url_path}
+                      hint={errors.url_path?.message}
                     />
                   )}
                 </div>
@@ -418,28 +506,34 @@ export default function AddIssue() {
                     <TextArea
                       rows={3}
                       placeholder="Enter your action taken"
-                      className="border w-full max-w-[350px] rounded px-2 py-2"
-                      value={formValues.action_taken}
-                      onChange={(e) => handleChange("action_taken", e)}
+                      className={`border w-full max-w-[350px] rounded px-2 py-2 ${
+                        errors.action_taken
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      }`}
+                      value={formValues.action_taken || ""}
+                      onChange={(value) => handleChange("action_taken", value)}
+                      error={!!errors.action_taken}
+                      hint={errors.action_taken?.message}
                     />
                   </div>
                 )}
               </div>
               {/* File Upload */}
-              <div className="w-full grid-cols-1 max-w-[350px]">
+              <div className="w-full grid-cols-1 ">
                 <FileUploadField
                   className=""
                   labelClass="text-sm  text-start w-fit font-medium text-[#094C81]"
                   id="attachment"
                   label="Attach File"
-                  value={formValues.attachment_id}
+                  value={formValues.attachment_id || []}
                   onChange={(val) => handleChange("attachment_id", val)}
                 />
               </div>
             </div>
 
             {/* Buttons */}
-            <div className="md:col-span-2 flex pr-10  justify-end gap-4">
+            <div className="md:col-span-2 flex  justify-end gap-4">
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -462,57 +556,62 @@ export default function AddIssue() {
           <GuidelinesCard guidelines={guidelines} />
         </div>
 
-        {showPriorityModal && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700">
-              {/* Title */}
-              <h3 className="text-xl font-semibold text-[#094C81] mb-4 flex items-center gap-2">
-                Confirm Priority Selection
-              </h3>
+        {showPriorityModal &&
+          (() => {
+            const selectedPriority = priorities.find(
+              (p) => p.priority_id === tempPriorityId
+            );
 
-              {/* Main Message */}
-              <p className="text-base text-gray-900 dark:text-gray-200">
-                Are you sure your support request is
-                <span className="font-bold text-red-600 ml-1">
-                  {tempPriority}?
-                </span>
-              </p>
+            return (
+              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700">
+                  {/* Title */}
+                  <h3 className="text-xl font-semibold text-[#094C81] mb-4 flex items-center gap-2">
+                    Confirm Priority Selection
+                  </h3>
 
-              {/* Extra Info */}
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-6 leading-relaxed">
-                Please review the guidelines on the right side of this page to
-                ensure the issue priority is correctly selected.
-              </p>
+                  {/* Main Message */}
+                  <p className="text-base text-gray-900 dark:text-gray-200">
+                    Are you sure your support request is
+                    <span className="font-bold text-red-600 ml-1">
+                      {selectedPriority?.name}?
+                    </span>
+                  </p>
 
-              {/* Buttons */}
-              <div className="flex justify-end gap-3 mt-2">
-                <button
-                  onClick={() => {
-                    setShowPriorityModal(false);
-                    setTempPriority("");
-                  }}
-                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                >
-                  Cancel
-                </button>
+                  {/* Extra Info */}
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-6 leading-relaxed">
+                    This Priority is for {selectedPriority?.description || "N/A"} and it will be resolved in {selectedPriority?.response_duration || "N/A"} {selectedPriority?.response_unit || ""}
+                  </p>
 
-                <button
-                  onClick={() => {
-                    const priorityObj = priorities.find(
-                      (p) => p.name.toLowerCase() === tempPriority.toLowerCase()
-                    );
-                    handleChange("priority_id", priorityObj?.priority_id);
+                  {/* Buttons */}
+                  <div className="flex justify-end gap-3 mt-2">
+                    <button
+                      onClick={() => {
+                        setShowPriorityModal(false);
+                        setTempPriorityId("");
+                      }}
+                      className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                    >
+                      Cancel
+                    </button>
 
-                    setShowPriorityModal(false);
-                  }}
-                  className="px-4 py-2 rounded-lg bg-[#094C81] text-white hover:bg-[#07385f] transition shadow-sm"
-                >
-                  Confirm
-                </button>
+                    <button
+                      onClick={() => {
+                        if (selectedPriority?.priority_id) {
+                          handleChange("priority_id", selectedPriority.priority_id);
+                        }
+                        setShowPriorityModal(false);
+                        setTempPriorityId("");
+                      }}
+                      className="px-4 py-2 rounded-lg bg-[#094C81] text-white hover:bg-[#07385f] transition shadow-sm"
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            );
+          })()}
       </div>
     </>
   );

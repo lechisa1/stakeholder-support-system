@@ -87,8 +87,8 @@ export const navItems: NavItem[] = [
 
   {
     icon: "FileWarning",
-    name: "My Issue",
-    path: "/my_issue",
+    name: "My Requests",
+    path: "/my_requests",
     allowedFor: ["external_user"],
     permission: ["REQUEST:VIEW_OWN"],
   },

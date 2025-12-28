@@ -76,6 +76,7 @@ export default function CreateRole() {
   const [permissionMatrix, setPermissionMatrix] = useState<PermissionMatrix>(
     {}
   );
+  const [isAllSelected, setIsAllSelected] = useState(false);
 
   const { data: permissionsData, isLoading: loadingPermissions } =
     useGetPermissionsQuery();
@@ -324,6 +325,19 @@ export default function CreateRole() {
     }
   };
 
+  useEffect(() => {
+    const totalPermissions = resourceGroups.reduce(
+      (acc, group) => acc + group.permissions.length,
+      0
+    );
+
+    const selectedCount = getSelectedPermissions().length;
+
+    setIsAllSelected(
+      totalPermissions > 0 && selectedCount === totalPermissions
+    );
+  }, [permissionMatrix, resourceGroups]);
+
   const resetForm = () => {
     setName("");
     setDescription("");
@@ -437,6 +451,7 @@ export default function CreateRole() {
                         <SelectTrigger className="h-11">
                           <SelectValue
                             placeholder={roleType ? "" : "Select role type"}
+                            defaultValue={roleType}
                           >
                             {roleType === "internal" && "Internal"}
                             {roleType === "external" && "External"}
@@ -486,6 +501,33 @@ export default function CreateRole() {
                           0
                         )}
                       </span>
+                      <div className="flex items-center space-x-3 ml-2">
+                        
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextValue = !isAllSelected;
+                            setIsAllSelected(nextValue);
+
+                            resourceGroups.forEach((group) => {
+                              selectAllInResource(group.resource, nextValue);
+                            });
+                          }}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                            isAllSelected ? "bg-green-600" : "bg-gray-400"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                              isAllSelected ? "translate-x-6" : "translate-x-1"
+                            }`}
+                          />
+                        </button>
+                        <span className="text-sm font-medium text-[#094C81]">
+                          {isAllSelected ? "All Selected" : "Select All"}
+                        </span>
+                      </div>
                     </div>
                   </CardTitle>
                 </CardHeader>

@@ -8,11 +8,12 @@ import { Button } from "../../ui/cn/button";
 import { PageLayout } from "../../common/PageLayout";
 import { DataTable } from "../../common/CommonTable";
 import { ActionButton, FilterField } from "../../../types/layout";
-import { CreateUserModal } from "../../modals/CreateUserModal";
+import { CreateInternalUserModal } from "../../modals/CreateInternalUserModal";
 
 import { useGetUsersQuery, User } from "../../../redux/services/userApi";
 import { useAuth } from "../../../contexts/AuthContext";
 import { getUserPositionId } from "../../../utils/helper/userPosition";
+import { CreateExternalUserModal } from "../../modals/CreateExternalUserModal";
 
 interface UserListProps {
   user_type?: string;
@@ -143,7 +144,13 @@ export default function UserList({
   const [response, setResponse] = useState<User[]>([]);
   const [filteredResponse, setFilteredResponse] = useState<User[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [isModalOpen, setModalOpen] = useState(false);
+  const [isExternalModalOpen, setIsExternalModalOpen] = useState(false);
+  const [isInternalModalOpen, setIsInternalModalOpen] = useState(false);
+  const [pageDetail, setPageDetail] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+    pageCount: 1,
+  });
 
   // --- Convert API data to array ---
   useEffect(() => {
@@ -191,21 +198,24 @@ export default function UserList({
     }));
   };
 
-  const buttonLabel = toggleActions
-    ? user_type === "internal_user"
-      ? "Create Internal User"
-      : "Create External User"
-    : "Create User";
   const actions: ActionButton[] = [
-    {
-      label: buttonLabel,
-      icon: <Plus className="h-4 w-4" />,
-      variant: "default",
-      size: "default",
-      onClick: () => setModalOpen(true),
-      permissions: ["USERS:CREATE"],
-    },
-  ];
+      {
+        label:
+          user_type === "internal_user"
+            ? "Create Internal User"
+            : "Create External User",
+        icon: <Plus className="h-4 w-4" />,
+        onClick: () => {
+          if (user_type === "external_user") {
+            setIsExternalModalOpen(true);
+          } else {
+            setIsInternalModalOpen(true); // internal modal (next step)
+          }
+        },
+        permissions: ["USERS:CREATE"],
+      },
+    ];
+    
 
   const filterFields: FilterField[] = [
     {
@@ -243,13 +253,17 @@ export default function UserList({
         />
       </PageLayout>
 
-      <CreateUserModal
+      <CreateInternalUserModal
+        user_type_id={user_type_id || ""}
+        isOpen={isInternalModalOpen}
+        onClose={() => setIsInternalModalOpen(false)}
+      />
+      <CreateExternalUserModal
         logged_user_type={logged_user_type || ""}
-        user_type={user_type || "internal_user"}
         user_type_id={user_type_id || ""}
         inistitute_id={inistitute_id || ""}
-        isOpen={isModalOpen}
-        onClose={() => setModalOpen(false)}
+        isOpen={isExternalModalOpen}
+        onClose={() => setIsExternalModalOpen(false)}
       />
     </>
   );

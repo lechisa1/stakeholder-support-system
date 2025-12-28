@@ -26,33 +26,35 @@ export type CategoryFormData = z.infer<typeof categorySchema>;
  * Priority Schemas
  */
 // color_value
-// : 
+// :
 // "#aabbcc"
 // description
-// : 
+// :
 // "checking"
 // is_active
-// : 
+// :
 // false
 // name
-// : 
+// :
 // "high"
 // response_duration
-// : 
+// :
 // 10
 // response_unit
-// : 
+// :
 // "hour"
 export const prioritySchema = createSchema({
   name: rules.required("Priority name is required"),
   description: rules.required("Description is required"),
-  response_duration: z.coerce.number({
-    message: "Response time must be a number",
-  }).positive("Response time must be greater than 0"),
-  
+  response_duration: z.coerce
+    .number({
+      message: "Response time must be a number",
+    })
+    .positive("Response time must be greater than 0"),
+
   response_unit: z.enum(["hour", "day", "month"], "Response unit is required"),
   color_value: rules.colorHex("Color have to be in hex format like #aabbcc"),
-  is_active: z.boolean()
+  is_active: z.boolean(),
 });
 
 export type PriorityFormData = z.infer<typeof prioritySchema>;
@@ -84,13 +86,10 @@ export const projectSchema = z
       .array(z.string())
       .min(1, "Select at least one skill"),
   })
-  .refine(
-    (data) => data.maintenance_start < data.maintenance_end,
-    {
-      message: "End date must be in the future of start date",
-      path: ["maintenance_end"],
-    }
-  );
+  .refine((data) => data.maintenance_start < data.maintenance_end, {
+    message: "End date must be in the future of start date",
+    path: ["maintenance_end"],
+  });
 
 export type ProjectFormData = z.infer<typeof projectSchema>;
 
@@ -150,6 +149,55 @@ export const createUserSchema = z
   });
 export type CreateUserFormData = z.infer<typeof createUserSchema>;
 
+export const createInternalUserSchema = z.object({
+  full_name: z
+    .string()
+    .min(3, "Full name must contain at least 3 characters.")
+    .max(40, "Full name must not exceed 40 characters.")
+    .regex(
+      /^[a-zA-Z\s]+$/,
+      "Full name may contain only alphabetic characters."
+    ),
+
+  email: rules.email("A valid email address is required."),
+  phone_number: z
+    .string()
+    .regex(/^(?:\+251|251|0)(9|7)\d{8}$/, "Please enter a valid phone number."),
+  position: rules.optionalString,
+
+  role_ids: z.array(z.string()).min(1, "Please select at least one role."),
+
+  project_metrics_ids: z
+    .array(z.string())
+    .min(1, "Please select at least one skill."),
+});
+
+export type CreateInternalUserFormData = z.infer<
+  typeof createInternalUserSchema
+>;
+
+export const createExternalUserSchema = z.object({
+  full_name: z
+    .string()
+    .min(3, "Full name must contain at least 3 characters.")
+    .max(40, "Full name must not exceed 40 characters.")
+    .regex(
+      /^[a-zA-Z\s]+$/,
+      "Full name may contain only alphabetic characters."
+    ),
+
+  email: rules.email("A valid email address is required."),
+  phone_number: z
+    .string()
+    .regex(/^(?:\+251|251|0)(9|7)\d{8}$/, "Please enter a valid phone number."),
+  position: rules.optionalString,
+
+  role_ids: z.array(z.string()).min(1, "Please select at least one role."),
+
+  institute_id: rules.uuid("Institute is required"),
+});
+export type CreateExternalUserFormData = z.infer<typeof createExternalUserSchema>;
+
 // User update schema (all fields optional except at least one required)
 export const userUpdateSchema = createSchema({
   full_name: rules.optionalString,
@@ -186,6 +234,30 @@ export const issueSchema = createSchema({
   status: z.enum(["pending", "in_progress", "resolved", "closed"]).optional(),
 });
 export type IssueFormData = z.infer<typeof issueSchema>;
+
+export const myIssueFormSchema = z.object({
+  project_id: rules.uuid("Project is required"),
+  issue_category_id: rules.uuid("Category is required"),
+  priority_id: rules.uuid("Priority level is required"),
+  issue_occured_time: z.string().min(1, "Date and time is required"),
+  description: rules.textarea,
+  url_path: z.string().url("Invalid URL").optional().or(z.literal("")),
+  // optional but it have to be min 10 characters if it is not empty
+  action_taken: z.string().min(10, "Action taken must be at least 10 characters").max(500, "Action taken must not exceed 500 characters").optional(),
+  action_taken_checkbox: z.boolean().optional(),
+  attachment_id: z.array(z.string()).optional(),
+  hierarchy_node_id: rules.optionalUuid,
+}).superRefine((data, ctx) => {
+  // If action_taken_checkbox is true, action_taken is required
+  if (data.action_taken_checkbox && !data.action_taken) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Please describe the steps you took",
+      path: ["action_taken"],
+    });
+  }
+});
+export type MyIssueFormData = z.infer<typeof myIssueFormSchema>;
 
 /**
  * Organization Schemas
@@ -283,41 +355,40 @@ export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 export const schemas = {
   // Auth
   signIn: signInSchema,
-  
+
   // Categories
   category: categorySchema,
-  
+
   // Priorities
   priority: prioritySchema,
-  
+
   // Projects
   project: projectSchema,
-  
+
   // Users
   userUpdate: userUpdateSchema,
   createUser: createUserSchema,
-  
+
   // Issues
   issue: issueSchema,
-  
+
   // Organizations
   organization: organizationSchema,
-  
+
   // Institutes
   institute: instituteSchema,
-  
+
   // Hierarchies
   hierarchy: hierarchySchema,
   hierarchyNode: hierarchyNodeSchema,
-  
+
   // Roles
   role: roleSchema,
-  
+
   // Project Metrics
   projectMetric: projectMetricSchema,
-  
+
   // Profile
   profileUpdate: profileUpdateSchema,
   changePassword: changePasswordSchema,
 };
-

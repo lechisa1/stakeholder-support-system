@@ -95,21 +95,21 @@ function AppContent() {
       <BreadcrumbProvider>
         <ScrollToTop />
 
-      <Routes>
-        <Route path='/' element={<LandingPage/>}/>
-        <Route path='/track_request' element={<TrackPage/>}/>
-        <Route path='/track_request/:id' element={<TrackPageDetail/>}/>
-        <Route element={<AppLayout />}>
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/track_request" element={<TrackPage />} />
+          <Route path="/track_request/:id" element={<TrackPageDetail />} />
+          <Route element={<AppLayout />}>
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* <Route
+            {/* <Route
             path="/users"
             element={
               <ProtectedRoute requiredPermissions={['user_read']}>
@@ -117,87 +117,97 @@ function AppContent() {
               </ProtectedRoute>
             }
           // /> */}
-          {/* InternalTaskList */}
+            {/* InternalTaskList */}
 
-          <Route path="/task_list" element={<InternalTaskList />} />
-          <Route path="/task_list/:id" element={<InternalTaskDetail />} />
+            <Route path="/task_list" element={<InternalTaskList />} />
+            <Route path="/task_list/:id" element={<InternalTaskDetail />} />
 
-          <Route path="/task" element={<UserTaskList />} />
-          <Route path="/task/:id" element={<UserTaskDetail />} />
-          <Route path="/issue/:id" element={<IssueDetail />} />
+            <Route path="/task" element={<UserTaskList />} />
+            <Route path="/task/:id" element={<UserTaskDetail />} />
+            <Route path="/issue/:id" element={<IssueDetail />} />
 
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/organization_profile" element={<OrganizationProfile />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/users/:id" element={<UserDetail />} />
-          <Route path="/organization" element={<Organization />} />
-          <Route path="/inistitutes" element={<Inistitutes />} />
-          <Route path="/organization/:id" element={<OrganizationDetail />} />
-          <Route path="/inistitutes/:id" element={<InistituteDetail />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/organization_profile"
+              element={<OrganizationProfile />}
+            />
+            <Route path="/users" element={<Users />} />
+            <Route path="/users/:id" element={<UserDetail />} />
+            <Route path="/organization" element={<Organization />} />
+            <Route path="/inistitutes" element={<Inistitutes />} />
+            <Route path="/organization/:id" element={<OrganizationDetail />} />
+            <Route path="/inistitutes/:id" element={<InistituteDetail />} />
 
-          <Route path="/project" element={<Project />} />
-          <Route path="/project/:id" element={<ProjectDetail />} />
-          
-          <Route path="/inistitutes/:instituteId/projects/:id" element={<InternalProjectDetail />} />
-          <Route path="/issue_flow/:id" element={<IssueFlow />} />
-          <Route path="/priority_level" element={<ProjectLevel />} />
-          <Route path="/priority_level/:id" element={<PriorityLevelDetail />} />
-          <Route path="/permission" element={<Permission />} />
-          <Route path="/role" element={<Roles />} />
-          <Route path="/role/:id" element={<CreateRole />} />
-          <Route path="/role/create" element={<CreateRole />} />
-          <Route path="/issue_category" element={<IssueCategory />} />
-          <Route path="/issue_category/:id" element={<IssueCategoryDetail />} />
-          <Route path="/my_issue" element={<MyIssue />} />
-          <Route path="/issue_configuration" element={<IssueFlowConfig />} />
+            <Route path="/project" element={<Project />} />
+            <Route path="/project/:id" element={<ProjectDetail />} />
+
+            <Route
+              path="/inistitutes/:instituteId/projects/:id"
+              element={<InternalProjectDetail />}
+            />
+            <Route path="/issue_flow/:id" element={<IssueFlow />} />
+            <Route path="/priority_level" element={<ProjectLevel />} />
+            <Route
+              path="/priority_level/:id"
+              element={<PriorityLevelDetail />}
+            />
+            <Route path="/permission" element={<Permission />} />
+            <Route path="/role" element={<Roles />} />
+            <Route path="/role/:id" element={<CreateRole />} />
+            <Route path="/role/create" element={<CreateRole />} />
+            <Route path="/issue_category" element={<IssueCategory />} />
+            <Route
+              path="/issue_category/:id"
+              element={<IssueCategoryDetail />}
+            />
+            <Route path="/my_requests" element={<MyIssue />} />
+            <Route path="/issue_configuration" element={<IssueFlowConfig />} />
+            <Route
+              path="/issue_configuration/:id"
+              element={<IssueConfigurationDetail />}
+            />
+            <Route path="/issue_flow/:id" element={<IssueFlow />} />
+            {/* IssueFlowConfig */}
+            <Route path="/add_issue" element={<MyissueForm />} />
+
+            <Route path="/org_structure" element={<OrgStructure />} />
+            <Route path="/org_structure/:id" element={<OrgStructureDetail />} />
+            {/* Metrics */}
+            <Route path="/human_resource" element={<Metrics />} />
+            <Route path="/basedata" element={<BaseData />} />
+
+            <Route
+              path="/roles"
+              element={
+                //<ProtectedRoute requiredPermissions={['role_read']}>
+                <Roles />
+                //</ProtectedRoute>
+              }
+            />
+          </Route>
+
           <Route
-            path="/issue_configuration/:id"
-            element={<IssueConfigurationDetail />}
-          />
-          <Route path="/issue_flow/:id" element={<IssueFlow />} />
-          {/* IssueFlowConfig */}
-          <Route path="/add_issue" element={<MyissueForm />} />
-         
-
-          <Route path="/org_structure" element={<OrgStructure />} />
-          <Route path="/org_structure/:id" element={<OrgStructureDetail />} />
-          {/* Metrics */}
-          <Route path="/human_resource" element={<Metrics />} />
-          <Route path="/basedata" element={<BaseData />} />
-
-          <Route
-            path="/roles"
+            path="/login"
             element={
-              //<ProtectedRoute requiredPermissions={['role_read']}>
-              <Roles />
-              //</ProtectedRoute>
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
             }
           />
-        </Route>
-
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/signin"
-          element={
-            <PublicRoute>
-              <ExternalLogin />
-            </PublicRoute>
-          }
-        />
-        {/* Internal Routes */}
-        <Route element={<InternalAppLayout />}>
-          <Route path="/internal/dashboard" element={<Home />} />
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          <Route
+            path="/signin"
+            element={
+              <PublicRoute>
+                <ExternalLogin />
+              </PublicRoute>
+            }
+          />
+          {/* Internal Routes */}
+          <Route element={<InternalAppLayout />}>
+            <Route path="/internal/dashboard" element={<Home />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BreadcrumbProvider>
     </Router>
   );
