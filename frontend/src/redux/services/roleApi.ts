@@ -1,6 +1,37 @@
 // src/redux/features/roleApi.ts
 import { baseApi } from "../baseApi";
 
+// --------------------- Types ---------------------
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  message: string;
+  data: T[];
+  meta?: PaginationMeta;
+}
+
+export interface Role {
+  role_id: string;
+  name: string;
+  description: string;
+  role_type?: string;
+  is_active: boolean;
+}
+
+export interface GetRolesParams {
+  role_type?: string;
+  is_active?: boolean;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 export const roleApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // ===== Create a new role =====
@@ -13,17 +44,32 @@ export const roleApi = baseApi.injectEndpoints({
       invalidatesTags: ["Roles"],
     }),
 
-    // ===== Get all roles =====
-    // getRoles: builder.query({
-    //   query: () => ({
-    //     url: "/roles",
-    //     method: "GET",
-    //   }),
-    //   providesTags: ["Roles"],
-    // }),
-
     // ===== Get all roles (with optional filters) =====
-    getRoles: builder.query({
+    getRoles: builder.query<PaginatedResponse<Role>, GetRolesParams | void>({
+      query: (params) => {
+        if (!params || Object.keys(params).length === 0) {
+          // No filters passed → fetch all roles
+          return `/roles?page=1&pageSize=10`;
+        }
+
+        // Build query string from params
+        const queryParams: Record<string, string> = {};
+
+        if (params.role_type) queryParams.role_type = params.role_type;
+        if (params.is_active !== undefined)
+          queryParams.is_active = params.is_active.toString();
+        if (params.search) queryParams.search = params.search;
+
+        queryParams.page = (params.page || 1).toString();
+        queryParams.pageSize = (params.pageSize || 10).toString();
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/roles${queryString}`;
+      },
+      providesTags: ["Roles"],
+    }),
+
+    getRoless: builder.query({
       query: (params?: { role_type?: string; is_active?: boolean }) => {
         if (!params || Object.keys(params).length === 0) {
           // No filters → fetch all roles

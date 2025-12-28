@@ -16,14 +16,55 @@ export interface CreateIssueCategoryDto {
   description?: string;
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  message: string;
+  data: T[];
+  meta?: PaginationMeta;
+}
+
+export interface GetIssueCategoryParams {
+  is_active?: boolean;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 // Inject endpoints into baseApi
 export const issueCategoryApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Get all categories
-    getIssueCategories: builder.query<IssueCategory[], void>({
-      query: () => `/issue-categories`,
+    getIssueCategories: builder.query<
+      PaginatedResponse<IssueCategory>,
+      GetIssueCategoryParams | void
+    >({
+      query: (params) => {
+        if (!params || Object.keys(params).length === 0) {
+          // No filters passed → fetch all users
+          return `/issue-categories?page=1&pageSize=10`;
+        }
+
+        // Build query string from params
+        const queryParams: Record<string, string> = {};
+
+        if (params.is_active !== undefined)
+          queryParams.is_active = params.is_active.toString();
+        if (params.search) queryParams.search = params.search;
+
+        queryParams.page = (params.page || 1).toString();
+        queryParams.pageSize = (params.pageSize || 10).toString();
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/issue-categories${queryString}`;
+      },
       providesTags: ["IssueCategory"],
-      transformResponse: (response: any) => response.data || [],
     }),
 
     // Get category by ID

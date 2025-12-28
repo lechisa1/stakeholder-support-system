@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "../../ui/cn/button";
 import { PageLayout } from "../../common/PageLayout";
 import { DataTable } from "../../common/CommonTable";
@@ -21,6 +22,9 @@ export default function IssuePriorityList() {
   const [filteredResponse, setFilteredResponse] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setModalOpen] = useState(false);
+
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
@@ -160,7 +164,15 @@ export default function IssuePriorityList() {
     },
   ].filter(Boolean);
 
-  const { data, isLoading, isError } = useGetIssuePrioritiesQuery();
+  const { data, isLoading, isError, refetch } = useGetIssuePrioritiesQuery({
+    search: searchQuery,
+    page: pageDetail.pageIndex + 1,
+    pageSize: pageDetail.pageSize,
+  });
+
+  useEffect(() => {
+    refetch();
+  }, [searchQuery, pageDetail.pageIndex, pageDetail.pageSize, refetch]);
 
   const actions: ActionButton[] = [
     {
@@ -191,20 +203,32 @@ export default function IssuePriorityList() {
     },
   ];
 
+  // --- Convert API data to array ---
   useEffect(() => {
     if (!isError && !isLoading && data) {
-      // Handle both array and object with data property
-      const priorities = Array.isArray(data) ? data : (data as any)?.data || [];
+      const priorities = Array.isArray(data) ? data : data.data || [];
       setResponse(priorities);
-      setFilteredResponse(priorities);
 
-      // Update page count based on filtered data
-      setPageDetail((prev) => ({
-        ...prev,
-        pageCount: Math.ceil(priorities.length / prev.pageSize),
-      }));
+      const filtered = priorities.filter((priority) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "active") return priority.is_active;
+        if (statusFilter === "inactive") return !priority.is_active;
+        return true;
+      });
+      setFilteredResponse(filtered);
+      if (data.meta) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.meta.totalPages || 1,
+        }));
+      } else if (data.pageCount !== undefined) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.pageCount,
+        }));
+      }
     }
-  }, [data, isError, isLoading]);
+  }, [data, isError, isLoading, statusFilter]);
 
   useEffect(() => {
     const filtered = response.filter((item) => {
@@ -214,21 +238,14 @@ export default function IssuePriorityList() {
       return true;
     });
     setFilteredResponse(filtered);
-
-    // Update page count
-    setPageDetail((prev) => ({
-      ...prev,
-      pageCount: Math.ceil(filtered.length / prev.pageSize),
-    }));
   }, [response, statusFilter]);
 
-  const handlePagination = (index: number, size: number) => {
-    setPageDetail({
-      ...pageDetail,
-      pageIndex: index,
-      pageSize: size,
-      pageCount: Math.ceil(filteredResponse.length / size),
-    });
+  const handlePagination = (pageIndex: number, pageSize: number) => {
+    setPageDetail((prev) => ({
+      ...prev,
+      pageIndex,
+      pageSize,
+    }));
   };
 
   const handleDelete = async () => {
@@ -257,6 +274,7 @@ export default function IssuePriorityList() {
           tablePageSize={pageDetail.pageSize}
           totalPageCount={pageDetail.pageCount}
           currentIndex={pageDetail.pageIndex}
+          isLoading={isLoading}
         />
       </PageLayout>
 
@@ -281,14 +299,13 @@ export default function IssuePriorityList() {
         isLoading={isDeleteLoading}
       />
       <EditPriorityModal
-  isOpen={isEditModalOpen}
-  priorityId={editPriorityId}
-  onClose={() => {
-    setEditModalOpen(false);
-    setEditPriorityId("");
-  }}
-/>
-
+        isOpen={isEditModalOpen}
+        priorityId={editPriorityId}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditPriorityId("");
+        }}
+      />
     </>
   );
 }

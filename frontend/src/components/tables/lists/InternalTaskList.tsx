@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { Plus, Eye, Trash2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from "react";
+import { Eye } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { useGetCurrentUserQuery } from "../../../redux/services/authApi";
 import { Button } from "../../ui/cn/button";
@@ -12,7 +12,6 @@ import { FilterField } from "../../../types/layout";
 
 import { useIssuesQuery } from "../../../hooks/useIssueQuery";
 import { formatStatus } from "../../../utils/statusFormatter";
-import { useAuth } from "../../../contexts/AuthContext";
 
 const TaskTableColumns = [
   {
@@ -40,7 +39,6 @@ const TaskTableColumns = [
     header: "Structure",
     cell: ({ row }: any) => row.original.hierarchyNode?.name || "N/A",
   },
-
   {
     accessorKey: "project.name",
     header: "Project",
@@ -85,14 +83,6 @@ const TaskTableColumns = [
               <Eye className="h-4 w-4" />
             </Link>
           </Button>
-          {/* <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-            onClick={() => console.log("Delete issue:", issue.issue_id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button> */}
         </div>
       );
     },
@@ -100,8 +90,6 @@ const TaskTableColumns = [
 ];
 
 export default function InternalTaskList() {
-  const { user } = useAuth();
-  console.log("user logged auth: ", user);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
@@ -114,21 +102,68 @@ export default function InternalTaskList() {
   const userInternalNode =
     loggedUser?.user?.internal_project_roles?.[0]?.internal_node;
 
+  // CORRECTED: Use the hook which now accepts searchQuery from URL
+  // The hook will pass searchQuery to the API
   const {
-    data: allIssues,
+    data: issuesData,
     isLoading: issuesLoading,
     isError,
     error: errors,
-  } = useIssuesQuery(userId, userInternalNode);
+  } = useIssuesQuery(
+    userId,
+    userInternalNode,
+    pageDetail.pageIndex + 1,
+    pageDetail.pageSize
+  );
 
+  // Extract issues and pagination data
+  const allIssues = useMemo(() => {
+    if (!issuesData) return [];
+
+    // Check if it's the paginated response (has data property)
+    if (issuesData.data && Array.isArray(issuesData.data)) {
+      return issuesData.data;
+    }
+
+    // Check if it's the non-paginated array
+    if (Array.isArray(issuesData)) {
+      return issuesData;
+    }
+
+    // Check if it has issues property (for escalated issues)
+    if (issuesData.issues && Array.isArray(issuesData.issues)) {
+      return issuesData.issues;
+    }
+
+    return [];
+  }, [issuesData]);
+
+  // Get pagination metadata
+
+  useEffect(() => {
+    if (issuesData?.meta) {
+      setPageDetail((prev) => ({
+        ...prev,
+        pageCount: issuesData.meta.totalPages,
+      }));
+    }
+  }, [issuesData?.meta]);
+
+  // Filter issues by status (client-side filtering)
   const filteredIssues = useMemo(() => {
-    const safeIssues = Array.isArray(allIssues?.issues)
-      ? allIssues?.issues
-      : [];
-    return safeIssues.filter(
-      (issue) => statusFilter === "all" || issue.status === statusFilter
-    );
+    return allIssues.filter((issue) => {
+      if (statusFilter === "all") return true;
+      return issue.status === statusFilter;
+    });
   }, [allIssues, statusFilter]);
+
+  const handlePagination = (index: number, size: number) => {
+    setPageDetail({
+      ...pageDetail,
+      pageIndex: index,
+      pageSize: size,
+    });
+  };
 
   const filterFields: FilterField[] = [
     {
@@ -136,13 +171,17 @@ export default function InternalTaskList() {
       label: "Status",
       type: "multiselect",
       options: [
+        { label: "All", value: "all" },
         { label: "Pending", value: "pending" },
         { label: "Resolved", value: "resolved" },
         { label: "Closed", value: "closed" },
       ],
       value: statusFilter,
-      onChange: (value: string | string[]) =>
-        setStatusFilter(Array.isArray(value) ? value[0] : value),
+      onChange: (value: string | string[]) => {
+        const newStatus = Array.isArray(value) ? value[0] : value;
+        setStatusFilter(newStatus);
+        setPageDetail({ ...pageDetail, pageIndex: 0 });
+      },
     },
   ];
 
@@ -164,11 +203,9 @@ export default function InternalTaskList() {
         <div className="flex justify-center items-center h-64">
           <div className="text-red-600">
             Error loading tasks. Please try again.
-            {errors.length > 0 && (
+            {errors && (
               <div className="text-sm text-gray-600 mt-2">
-                {errors.map((error, index) => (
-                  <div key={index}>Error: {JSON.stringify(error)}</div>
-                ))}
+                Error details: {JSON.stringify(errors)}
               </div>
             )}
           </div>
@@ -187,12 +224,11 @@ export default function InternalTaskList() {
       <DataTable
         columns={TaskTableColumns}
         data={filteredIssues}
-        handlePagination={(index, size) =>
-          setPageDetail({ ...pageDetail, pageIndex: index, pageSize: size })
-        }
+        handlePagination={handlePagination}
         tablePageSize={pageDetail.pageSize}
         totalPageCount={pageDetail.pageCount}
         currentIndex={pageDetail.pageIndex}
+        isLoading={issuesLoading}
       />
     </PageLayout>
   );

@@ -1,7 +1,8 @@
-// Internally  assgined users to project
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Plus } from "lucide-react";
 
 import {
   useDeleteHierarchyNodeMutation,
@@ -11,11 +12,7 @@ import {
 import { PageLayout } from "../../common/PageLayout";
 import { DataTable } from "../../common/CommonTable";
 import { ActionButton, FilterField } from "../../../types/layout";
-import {
-  useGetInternalUsersAssignedToProjectQuery,
-  useGetUsersAssignedToProjectQuery,
-} from "../../../redux/services/userApi";
-import { Plus } from "lucide-react";
+import { useGetInternalUsersAssignedToProjectQuery } from "../../../redux/services/userApi";
 import AssignInternalUsersModal from "../../modals/AssignInternalUsersToProjectModal";
 
 // ------------------- Table Columns -------------------
@@ -66,54 +63,6 @@ const ProjectUserTableColumns = (deleteUser: any) => [
       );
     },
   },
-  //   {
-  //     id: "actions",
-  //     header: "Actions",
-  //     cell: ({ row }: any) => {
-  //       const userAssignment = row.original;
-
-  //       const handleDelete = async () => {
-  //         if (
-  //           confirm(
-  //             `Remove user "${userAssignment.user?.full_name}" from project?`
-  //           )
-  //         ) {
-  //           try {
-  //             // You'll need to implement this mutation or use an existing one
-  //             await deleteUser(userAssignment.project_user_role_id).unwrap();
-  //             toast.success("User removed from project successfully");
-  //           } catch (err: any) {
-  //             toast.error(
-  //               err?.data?.message || "Error removing user from project"
-  //             );
-  //           }
-  //         }
-  //       };
-
-  //       return (
-  //         <div className="flex items-center space-x-2">
-  //           <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
-  //             <Link to={`/users/${userAssignment.user_id}`}>
-  //               <Eye className="h-4 w-4" />
-  //             </Link>
-  //           </Button>
-  //           {/* <Button variant="outline" size="sm" className="h-8 w-8 p-0" asChild>
-  //             <Link to={`/users/${userAssignment.user_id}/edit`}>
-  //               <Edit className="h-4 w-4" />
-  //             </Link>
-  //           </Button>
-  //           <Button
-  //             variant="outline"
-  //             size="sm"
-  //             className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-  //             onClick={handleDelete}
-  //           >
-  //             <Trash2 className="h-4 w-4" />
-  //           </Button> */}
-  //         </div>
-  //       );
-  //     },
-  //   },
 ];
 
 interface ProjectUserListProps {
@@ -126,6 +75,9 @@ export default function ProjectAssignedUsers({
   project_id,
   toggleActions,
 }: ProjectUserListProps) {
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
+
   const [users, setUsers] = useState<any[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -136,22 +88,42 @@ export default function ProjectAssignedUsers({
     pageSize: 10,
   });
 
-  const { data, isLoading, isError } =
-    useGetInternalUsersAssignedToProjectQuery(project_id, {
-      skip: !project_id,
-    });
+  // Use the new RTK query with search and pagination parameters
+  const { data, isLoading, isError, refetch } =
+    useGetInternalUsersAssignedToProjectQuery(
+      {
+        project_id,
+        search: searchQuery,
+        page: pageDetail.pageIndex + 1,
+        pageSize: pageDetail.pageSize,
+      },
+      {
+        skip: !project_id,
+      }
+    );
 
-  // You'll need to implement this mutation or use an existing one
-  const [deleteUserAssignment] = useDeleteHierarchyNodeMutation(); // Replace with actual user assignment deletion mutation
+  // Refetch when search or pagination changes
+  useEffect(() => {
+    if (project_id) {
+      refetch();
+    }
+  }, [
+    searchQuery,
+    pageDetail.pageIndex,
+    pageDetail.pageSize,
+    project_id,
+    refetch,
+  ]);
 
+  const [deleteUserAssignment] = useDeleteHierarchyNodeMutation();
   const [toggleView, setToggleView] = useState("table");
 
   const actions: ActionButton[] = [
     {
       label: "Assign Users",
       icon: <Plus className="h-4 w-4" />,
-      variant: "default", // matches allowed type
-      size: "default", // matches allowed type
+      variant: "default",
+      size: "default",
       onClick: () => setModalOpen(true),
     },
   ];
@@ -162,6 +134,7 @@ export default function ProjectAssignedUsers({
       label: "Status",
       type: "multiselect",
       options: [
+        { label: "All", value: "all" },
         { label: "Active", value: "ACTIVE" },
         { label: "Inactive", value: "INACTIVE" },
       ],
@@ -178,33 +151,48 @@ export default function ProjectAssignedUsers({
       // Access the data array from the response
       const userAssignments = data.data || [];
       setUsers(userAssignments);
-      setFilteredUsers(userAssignments);
 
-      // Update pagination info based on response count
-      if (data.count) {
+      // Apply status filter to the server-side filtered data
+      const filtered = userAssignments.filter((item) => {
+        if (!statusFilter || statusFilter === "all") return true;
+        if (statusFilter === "ACTIVE") return item.is_active;
+        if (statusFilter === "INACTIVE") return !item.is_active;
+        return true;
+      });
+
+      setFilteredUsers(filtered);
+
+      // Update pagination info from API metadata
+      if (data.meta) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.meta.totalPages || 1,
+          pageSize: data.meta.pageSize || prev.pageSize,
+        }));
+      } else if (data.count) {
+        // Fallback to count if meta is not available
         setPageDetail((prev) => ({
           ...prev,
           pageCount: Math.ceil(data.count / prev.pageSize),
         }));
       }
     }
-  }, [data, isError, isLoading]);
+  }, [data, isError, isLoading, statusFilter]);
 
-  useEffect(() => {
-    const filtered = users.filter((item) => {
-      if (!statusFilter || statusFilter === "all") return true;
-      if (statusFilter === "ACTIVE") return item.is_active;
-      if (statusFilter === "INACTIVE") return !item.is_active;
-      return true;
-    });
-    setFilteredUsers(filtered);
-  }, [users, statusFilter]);
+  // Apply pagination to filtered users
+  const paginatedData = filteredUsers.slice(
+    pageDetail.pageIndex * pageDetail.pageSize,
+    (pageDetail.pageIndex + 1) * pageDetail.pageSize
+  );
 
   const handlePagination = (index: number, size: number) => {
     setPageDetail({ ...pageDetail, pageIndex: index, pageSize: size });
   };
 
-  console.log("toggleView: ", toggleView);
+  // Calculate page count based on filtered users
+  const filteredPageCount = Math.ceil(
+    filteredUsers.length / pageDetail.pageSize
+  );
 
   return (
     <>
@@ -218,15 +206,14 @@ export default function ProjectAssignedUsers({
         {toggleView === "table" ? (
           <DataTable
             columns={ProjectUserTableColumns(deleteUserAssignment)}
-            data={filteredUsers}
+            data={paginatedData}
             handlePagination={handlePagination}
             tablePageSize={pageDetail.pageSize}
-            totalPageCount={pageDetail.pageCount}
+            totalPageCount={filteredPageCount}
             currentIndex={pageDetail.pageIndex}
+            isLoading={isLoading}
           />
         ) : (
-          // You might want to create a different visualization for users
-          // or keep the hierarchy tree if it makes sense for your use case
           <div className="p-4">
             <p>User list visualization not implemented yet</p>
           </div>
@@ -234,7 +221,10 @@ export default function ProjectAssignedUsers({
         <AssignInternalUsersModal
           project_id={project_id}
           isOpen={isModalOpen}
-          onClose={() => setModalOpen(false)}
+          onClose={() => {
+            setModalOpen(false);
+            refetch(); // Refetch data after modal closes
+          }}
         />
       </PageLayout>
     </>

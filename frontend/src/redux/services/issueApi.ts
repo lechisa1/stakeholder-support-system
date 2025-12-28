@@ -21,6 +21,9 @@ export interface IssueByTicketNumberParams {
 
 export interface IssuesByProjectIdsParams {
   projectIds: string[]; // array of project UUIDs
+  search?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface Issue {
@@ -51,6 +54,21 @@ export interface Issue {
   hierarchyNode?: any;
 }
 // In src/redux/apis/issueApi.ts
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+export interface PaginatedResponse<T> {
+  success: boolean;
+  message: string;
+  data: T[];
+  meta?: PaginationMeta;
+  search_query?: string;
+  count: number;
+  total_count: number;
+}
 
 export interface AcceptIssueDto {
   issue_id: string;
@@ -127,12 +145,41 @@ export const issueApi = baseApi.injectEndpoints({
       providesTags: ["Issue"],
     }),
 
-    getIssuesByProjectIds: builder.query<Issue[], string[]>({
-      query: (projectIds) => {
-        const encoded = encodeURIComponent(JSON.stringify(projectIds));
-        return `/issues/issues-by-project/${encoded}`;
+    // getIssuesByProjectIds: builder.query<Issue[], string[]>({
+    //   query: (projectIds) => {
+    //     const encoded = encodeURIComponent(JSON.stringify(projectIds));
+    //     return `/issues/issues-by-project/${encoded}`;
+    //   },
+    //   providesTags: ["Issue"],
+    // }),
+
+    getIssuesByProjectIds: builder.query<
+      PaginatedResponse<Issue>,
+      IssuesByProjectIdsParams
+    >({
+      query: ({ projectIds, search, page = 1, pageSize = 10 }) => {
+        // Encode projectIds array
+        const encodedProjectIds = encodeURIComponent(
+          JSON.stringify(projectIds)
+        );
+
+        // Build query string
+        const queryParams: Record<string, string> = {};
+        queryParams.page = page.toString();
+        queryParams.pageSize = pageSize.toString();
+
+        if (search) queryParams.search = search;
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/issues/issues-by-project/${encodedProjectIds}${queryString}`;
       },
-      providesTags: ["Issue"],
+      providesTags: (result, error, params) => [
+        {
+          type: "Issue",
+          id: `project-issues-${params.projectIds.join("-")}`,
+        },
+        "Issue",
+      ],
     }),
 
     // New endpoint: Get escalated issues with null tier

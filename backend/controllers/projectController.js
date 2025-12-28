@@ -17,6 +17,7 @@ const {
   InternalNode,
 } = require("../models");
 const { v4: uuidv4 } = require("uuid");
+const { Op } = require("sequelize");
 
 // Create a new project
 const createProject = async (req, res) => {
@@ -129,16 +130,72 @@ const createProject = async (req, res) => {
 // Get all projects
 const getProjects = async (req, res) => {
   try {
-    const projects = await Project.findAll({
-      include: [
-        {
-          model: Institute,
-          as: "institutes",
-          through: { attributes: ["is_active"] },
-        },
-      ],
+    const {
+      is_active,
+      institute_id,
+      search, // optional: for name/email search
+      page = 1,
+      pageSize = 10,
+    } = req.query;
+    // ====== Build filters dynamically ======
+    const whereClause = {};
+
+    if (is_active !== undefined) whereClause.is_active = is_active === "true";
+
+    if (search) {
+      whereClause[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+      ];
+    }
+    // ====== Calculate pagination ======
+    const pageNum = parseInt(page);
+    const limit = parseInt(pageSize);
+    const offset = (pageNum - 1) * limit;
+
+    // 🔹 Build include dynamically
+    const instituteInclude = {
+      model: Institute,
+      as: "institutes",
+      attributes: ["institute_id", "name"],
+      through: { attributes: [] },
+    };
+
+    // 🔹 Apply institute filter ONLY if provided
+    if (institute_id) {
+      instituteInclude.where = { institute_id };
+      instituteInclude.required = true; // INNER JOIN
+    }
+
+    // ====== Fetch total count ======
+    const total = await Project.count({
+      where: whereClause,
+      include: institute_id ? [instituteInclude] : [],
+      distinct: true,
     });
-    res.status(200).json(projects);
+
+    const projects = await Project.findAll({
+      where: whereClause,
+      include: [instituteInclude],
+      order: [["created_at", "DESC"]],
+      limit: limit,
+      offset: offset,
+      distinct: true,
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json({
+      success: true,
+      message: "Projects fetched successfully.",
+      data: projects,
+      meta: {
+        page: pageNum,
+        pageSize: limit,
+        total: total,
+        totalPages: totalPages,
+      },
+    });
   } catch (error) {
     console.error(error);
     res
@@ -213,10 +270,36 @@ const getProjectById = async (req, res) => {
 const getProjectByInstituteId = async (req, res) => {
   try {
     const { institute_id } = req.params;
+    const {
+      is_active,
+      search, // optional: for name/email search
+      page = 1,
+      pageSize = 10,
+    } = req.query;
 
     if (!institute_id) {
       return res.status(400).json({ message: "Institute ID is required" });
     }
+
+    // ====== Build filters dynamically ======
+    const whereClause = {};
+
+    if (is_active !== undefined) whereClause.is_active = is_active === "true";
+
+    if (search) {
+      whereClause[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    // ====== Calculate pagination ======
+    const pageNum = parseInt(page);
+    const limit = parseInt(pageSize);
+    const offset = (pageNum - 1) * limit;
+
+    // ====== Fetch total count ======
+    const total = await Project.count({ where: whereClause });
 
     const projects = await Project.findAll({
       include: [
@@ -266,7 +349,12 @@ const getProjectByInstituteId = async (req, res) => {
           ],
         },
       ],
+      order: [["created_at", "DESC"]],
+      limit: limit,
+      offset: offset,
     });
+
+    const totalPages = Math.ceil(total / limit);
 
     if (!projects || projects.length === 0) {
       return res.status(404).json({
@@ -274,7 +362,17 @@ const getProjectByInstituteId = async (req, res) => {
       });
     }
 
-    return res.status(200).json(projects);
+    return res.status(200).json({
+      success: true,
+      message: "Projects fetched successfully.",
+      data: projects,
+      meta: {
+        page: pageNum,
+        pageSize: limit,
+        total: total,
+        totalPages: totalPages,
+      },
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({

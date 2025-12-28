@@ -22,12 +22,54 @@ export interface CreateIssuePriorityDto {
   is_active?: boolean;
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  message: string;
+  data: T[];
+  meta?: PaginationMeta;
+}
+
+export interface GetIssuePriorityParams {
+  is_active?: boolean;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 // Inject endpoints into baseApi
 export const issuePriorityApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Get all priorities
-    getIssuePriorities: builder.query<IssuePriority[], void>({
-      query: () => `/issue-priorities`,
+    getIssuePriorities: builder.query<
+      PaginatedResponse<IssuePriority>,
+      GetIssuePriorityParams | void
+    >({
+      query: (params) => {
+        if (!params || Object.keys(params).length === 0) {
+          // No filters passed → fetch all users
+          return `/issue-priorities?page=1&pageSize=10`;
+        }
+
+        // Build query string from params
+        const queryParams: Record<string, string> = {};
+
+        if (params.is_active !== undefined)
+          queryParams.is_active = params.is_active.toString();
+        if (params.search) queryParams.search = params.search;
+
+        queryParams.page = (params.page || 1).toString();
+        queryParams.pageSize = (params.pageSize || 10).toString();
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/issue-priorities${queryString}`;
+      },
       providesTags: ["IssuePriority"],
     }),
 
@@ -62,7 +104,7 @@ export const issuePriorityApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: "IssuePriority", id },
-        "IssuePriority",   
+        "IssuePriority",
       ],
     }),
 

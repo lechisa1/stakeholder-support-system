@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Eye } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import {
@@ -14,7 +14,7 @@ import { PageLayout } from "../../common/PageLayout";
 import { DataTable } from "../../common/CommonTable";
 import { ActionButton, FilterField } from "../../../types/layout";
 
-const RoleTableColumns = (handleDelete: (id: string) => void) => [
+const RoleTableColumns = [
   {
     accessorKey: "name",
     header: "Role Name",
@@ -84,23 +84,24 @@ export default function RoleList() {
   const [filteredResponse, setFilteredResponse] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const navigate = useNavigate();
+
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
     pageSize: 10,
   });
 
-  const { data, isLoading, isError } = useGetRolesQuery(undefined);
-  const [deleteRole] = useDeleteRoleMutation();
+  const { data, isLoading, isError, refetch } = useGetRolesQuery({
+    search: searchQuery,
+    page: pageDetail.pageIndex + 1,
+    pageSize: pageDetail.pageSize,
+  });
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteRole(id).unwrap();
-      toast.success("Role deleted successfully");
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to delete role");
-    }
-  };
+  useEffect(() => {
+    refetch();
+  }, [searchQuery, pageDetail.pageIndex, pageDetail.pageSize, refetch]);
 
   const actions: ActionButton[] = [
     {
@@ -136,26 +137,45 @@ export default function RoleList() {
     if (!isError && !isLoading && data) {
       const roles = Array.isArray(data) ? data : data?.data || [];
       setResponse(roles);
-      setFilteredResponse(roles);
-    }
-  }, [data, isError, isLoading]);
 
+      const filtered = roles.filter((item) => {
+        if (!statusFilter || statusFilter === "all") return true;
+        if (statusFilter === "ACTIVE") return item.is_active;
+        if (statusFilter === "INACTIVE") return !item.is_active;
+        return true;
+      });
+      setFilteredResponse(filtered);
+      if (data.meta) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.meta.totalPages || 1,
+        }));
+      } else if (data.pageCount !== undefined) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.pageCount,
+        }));
+      }
+    }
+  }, [data, isError, isLoading, statusFilter]);
+
+  // --- Filter by status ---
   useEffect(() => {
-    const filtered = response.filter((item) => {
-      if (!statusFilter || statusFilter === "all") return true;
-      if (statusFilter === "ACTIVE") return item.is_active;
-      if (statusFilter === "INACTIVE") return !item.is_active;
+    const filtered = response.filter((role) => {
+      if (statusFilter === "all") return true;
+      if (statusFilter === "active") return role.is_active;
+      if (statusFilter === "inactive") return !role.is_active;
       return true;
     });
     setFilteredResponse(filtered);
   }, [response, statusFilter]);
 
-  const handlePagination = (index: number, size: number) => {
-    setPageDetail({
-      ...pageDetail,
-      pageIndex: index,
-      pageSize: size,
-    });
+  const handlePagination = (pageIndex: number, pageSize: number) => {
+    setPageDetail((prev) => ({
+      ...prev,
+      pageIndex,
+      pageSize,
+    }));
   };
 
   return (
@@ -170,12 +190,13 @@ export default function RoleList() {
         description="List of all roles"
       >
         <DataTable
-          columns={RoleTableColumns(handleDelete)}
+          columns={RoleTableColumns}
           data={filteredResponse}
           handlePagination={handlePagination}
           tablePageSize={pageDetail.pageSize}
           totalPageCount={pageDetail.pageCount}
           currentIndex={pageDetail.pageIndex}
+          isLoading={isLoading}
         />
       </PageLayout>
     </>

@@ -232,13 +232,34 @@ const createRole = async (req, res) => {
 // Get all roles with sub-roles and permissions
 const getRoles = async (req, res) => {
   try {
-    const { role_type, is_active } = req.query; // expecting query params
+    const {
+      role_type,
+      is_active,
+      search, // optional: for name/email search
+      page = 1,
+      pageSize = 10,
+    } = req.query; // expecting query params
 
     // Build dynamic where clause
     const whereClause = {};
     if (role_type) whereClause.role_type = role_type;
-
     if (is_active !== undefined) whereClause.is_active = is_active === "true";
+
+    if (search) {
+      whereClause[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        // { role_type: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    // ====== Calculate pagination ======
+    const pageNum = parseInt(page);
+    const limit = parseInt(pageSize);
+    const offset = (pageNum - 1) * limit;
+
+    // ====== Fetch total count ======
+    const total = await Role.count({ where: whereClause });
 
     const roles = await Role.findAll({
       where: whereClause,
@@ -269,12 +290,22 @@ const getRoles = async (req, res) => {
         },
       ],
       order: [["created_at", "DESC"]],
+      limit: limit,
+      offset: offset,
     });
+
+    const totalPages = Math.ceil(total / limit);
 
     return res.status(200).json({
       success: true,
-      count: roles.length,
+      message: "Roles fetched successfully.",
       data: roles,
+      meta: {
+        page: pageNum,
+        pageSize: limit,
+        total: total,
+        totalPages: totalPages,
+      },
     });
   } catch (error) {
     console.error("Error fetching roles:", error);

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Eye } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 
 import {
   useDeleteInternalNodeMutation,
@@ -28,21 +28,32 @@ export default function IssueFlowList({
   toggleActions,
   isAssignUsersToStructure,
 }: IssueFlowListProps) {
-  const { data, isLoading, isError } = useGetInternalNodesQuery();
-  const [deleteNode] = useDeleteInternalNodeMutation();
-
   const [nodes, setNodes] = useState<any[]>([]);
   const [filteredNodes, setFilteredNodes] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setModalOpen] = useState(false);
   const [toggleView, setToggleView] = useState("table");
+
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
     pageSize: 10,
   });
   const { pathname } = useLocation();
-  console.log(pathname, "this is the pathname");
+
+  const { data, isLoading, isError, refetch } = useGetInternalNodesQuery({
+    search: searchQuery,
+    page: pageDetail.pageIndex + 1,
+    pageSize: pageDetail.pageSize,
+  });
+  const [deleteNode] = useDeleteInternalNodeMutation();
+
+  useEffect(() => {
+    refetch();
+  }, [searchQuery, pageDetail.pageIndex, pageDetail.pageSize, refetch]);
+
   // ------------------- Table Columns -------------------
   const InternalNodeTableColumns = (deleteNode: any) => [
     {
@@ -162,12 +173,32 @@ export default function IssueFlowList({
     },
   ];
 
+  // --- Convert API data to array ---
   useEffect(() => {
     if (!isError && !isLoading && data) {
-      setNodes(data || []);
-      setFilteredNodes(data || []);
+      const nodes = Array.isArray(data) ? data : data.data || [];
+      setNodes(nodes);
+
+      const filtered = nodes.filter((node) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "active") return node.is_active;
+        if (statusFilter === "inactive") return !node.is_active;
+        return true;
+      });
+      setFilteredNodes(filtered);
+      if (data.meta) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.meta.totalPages || 1,
+        }));
+      } else if (data.pageCount !== undefined) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.pageCount,
+        }));
+      }
     }
-  }, [data, isError, isLoading]);
+  }, [data, isError, isLoading, statusFilter]);
 
   useEffect(() => {
     const filtered = nodes.filter((item) => {
@@ -179,15 +210,14 @@ export default function IssueFlowList({
     setFilteredNodes(filtered);
   }, [nodes, statusFilter]);
 
-  const handlePagination = (index: number, size: number) => {
-    setPageDetail({ ...pageDetail, pageIndex: index, pageSize: size });
+  const handlePagination = (pageIndex: number, pageSize: number) => {
+    setPageDetail((prev) => ({
+      ...prev,
+      pageIndex,
+      pageSize,
+    }));
   };
-  console.log(
-    pathname,
-    "this is the pathname",
-    filteredNodes,
-    "this is the filtered nodes"
-  );
+
   return (
     <>
       <PageLayout
@@ -217,6 +247,7 @@ export default function IssueFlowList({
             tablePageSize={pageDetail.pageSize}
             totalPageCount={pageDetail.pageCount}
             currentIndex={pageDetail.pageIndex}
+            isLoading={isLoading}
           />
         ) : (
           <HierarchyD3TreeInstitute

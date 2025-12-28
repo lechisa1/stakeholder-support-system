@@ -2,9 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Eye, Edit, Trash2 } from "lucide-react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
-import { useGetInstitutesQuery } from "../../../redux/services/instituteApi";
+import {
+  Institute,
+  useGetInstitutesQuery,
+} from "../../../redux/services/instituteApi";
 import { Button } from "../../ui/cn/button";
 import { PageLayout } from "../../common/PageLayout";
 import { DataTable } from "../../common/CommonTable";
@@ -71,10 +74,12 @@ const InstituteTableColumns = [
 ];
 
 export default function InstituteList() {
-  const [response, setResponse] = useState<any[]>([]);
-  const [filteredResponse, setFilteredResponse] = useState<any[]>([]);
+  const [response, setResponse] = useState<Institute[]>([]);
+  const [filteredResponse, setFilteredResponse] = useState<Institute[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setModalOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
@@ -109,14 +114,42 @@ export default function InstituteList() {
     },
   ];
 
-  const { isLoading, isError, data } = useGetInstitutesQuery();
+  const { isLoading, isError, data, refetch } = useGetInstitutesQuery({
+    search: searchQuery,
+    page: pageDetail.pageIndex + 1,
+    pageSize: pageDetail.pageSize,
+  });
 
   useEffect(() => {
+    refetch();
+  }, [searchQuery, pageDetail.pageIndex, pageDetail.pageSize, refetch]);
+
+  // --- Convert API data to array ---
+  useEffect(() => {
     if (!isError && !isLoading && data) {
-      setResponse(data || []);
-      setFilteredResponse(data || []);
+      const institutes = Array.isArray(data) ? data : data.data || [];
+      setResponse(institutes);
+
+      const filtered = institutes.filter((institute) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "active") return institute.is_active;
+        if (statusFilter === "inactive") return !institute.is_active;
+        return true;
+      });
+      setFilteredResponse(filtered);
+      if (data.meta) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.meta.totalPages || 1,
+        }));
+      } else if (data.pageCount !== undefined) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.pageCount,
+        }));
+      }
     }
-  }, [data, isError, isLoading]);
+  }, [data, isError, isLoading, statusFilter]);
 
   // Apply status filter
   useEffect(() => {
@@ -129,12 +162,12 @@ export default function InstituteList() {
     setFilteredResponse(filtered);
   }, [response, statusFilter]);
 
-  const handlePagination = (index: number, size: number) => {
-    setPageDetail({
-      ...pageDetail,
-      pageIndex: index,
-      pageSize: size,
-    });
+  const handlePagination = (pageIndex: number, pageSize: number) => {
+    setPageDetail((prev) => ({
+      ...prev,
+      pageIndex,
+      pageSize,
+    }));
   };
 
   return (
@@ -153,6 +186,7 @@ export default function InstituteList() {
           tablePageSize={pageDetail.pageSize}
           totalPageCount={pageDetail.pageCount}
           currentIndex={pageDetail.pageIndex}
+          isLoading={isLoading}
         />
       </PageLayout>
       <CreateInstituteModal

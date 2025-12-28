@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 import { Button } from "../../ui/cn/button";
 import { PageLayout } from "../../common/PageLayout";
@@ -77,107 +78,138 @@ interface Props {
   internal_node_name: string;
 }
 
-
 export default function InternalNodeUsersListConfig({
   projectId,
   internal_node_id,
   internal_node_name,
 }: Props) {
   const [response, setResponse] = useState<any[]>([]);
-  const [filteredResponse, setFilteredResponse] = useState<any[]>([]);
-  const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [isModalOpen, setModalOpen] = useState(false);
-
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
     pageSize: 10,
   });
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [isModalOpen, setModalOpen] = useState(false);
 
-  const { data, isLoading, isError } = useGetUsersByInternalNodeIdQuery(
-    {
-      project_id: projectId,
-      internal_node_id,
-    },
-    {
-      skip: !projectId || !internal_node_id,
+  // Use the API query with search functionality
+  const { data, isLoading, isError, refetch } =
+    useGetUsersByInternalNodeIdQuery(
+      {
+        project_id: projectId,
+        internal_node_id,
+        search: searchQuery,
+        page: pageDetail.pageIndex + 1,
+        pageSize: pageDetail.pageSize,
+      },
+      {
+        skip: !projectId || !internal_node_id,
+      }
+    );
+
+  // Refetch when search query or pagination changes
+  useEffect(() => {
+    if (projectId && internal_node_id) {
+      refetch();
     }
-  );
+  }, [
+    searchQuery,
+    pageDetail.pageIndex,
+    pageDetail.pageSize,
+    projectId,
+    internal_node_id,
+    refetch,
+  ]);
 
-  // const actions: ActionButton[] = [
-  //   {
-  //     label: "Assign User",
-  //     icon: <Plus className="h-4 w-4" />,
-  //     variant: "default",
-  //     size: "default",
-  //     onClick: () => setModalOpen(true),
-  //   },
-  // ];
-  // Filters
+  const actions: ActionButton[] = [
+    {
+      label: "Assign User",
+      icon: <Plus className="h-4 w-4" />,
+      variant: "default",
+      size: "default",
+      onClick: () => setModalOpen(true),
+    },
+  ];
+
+  // Filters - Note: The search is now handled through URL params like in IssueFlowList
   const filterFields: FilterField[] = [
     {
       key: "role",
       label: "Role",
       type: "text",
-      placeholder: "Search by role",
+      placeholder: "Search by role name",
       value: roleFilter,
       onChange: (value: string | string[]) => {
-        setRoleFilter(value as string);
+        const newRoleFilter = Array.isArray(value) ? value[0] : value;
+        setRoleFilter(newRoleFilter);
         setPageDetail({ ...pageDetail, pageIndex: 0 });
       },
     },
   ];
 
-  // Load initial data
+  // --- Convert API data to array ---
   useEffect(() => {
-    if (!isLoading && !isError && data?.data) {
-      setResponse(data.data);
-      setFilteredResponse(data.data);
+    if (!isError && !isLoading && data) {
+      // Directly use the data from API (already server-side filtered by search)
+      const users = Array.isArray(data) ? data : data.data || [];
+      setResponse(users);
+
+      // Apply role filter client-side if needed
+      const filtered = users.filter((item) => {
+        if (roleFilter === "all" || roleFilter === "") return true;
+        return item.role?.name
+          ?.toLowerCase()
+          .includes(roleFilter.toLowerCase());
+      });
+
+      // Update pagination info from API metadata
+      if (data.meta) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.meta.totalPages || 1,
+          pageSize: data.meta.pageSize || prev.pageSize,
+        }));
+      } else if (data.pageCount !== undefined) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.pageCount,
+        }));
+      }
     }
-  }, [data, isLoading, isError]);
+  }, [data, isError, isLoading, roleFilter]);
 
-  // Apply filters
-  useEffect(() => {
-    const filtered = response.filter((item) => {
-      if (roleFilter === "all" || roleFilter === "") return true;
-      return item.role?.name?.toLowerCase().includes(roleFilter.toLowerCase());
-    });
-
-    setFilteredResponse(filtered);
-  }, [roleFilter, response]);
-
-  // Apply pagination
+  // Apply pagination - server-side handled by API, client-side for role filter
   const paginatedData = React.useMemo(() => {
-    const start = pageDetail.pageIndex * pageDetail.pageSize;
-    const end = start + pageDetail.pageSize;
-
-    // Compute page count dynamically
-    const totalCount = filteredResponse.length;
-    const pageCount = Math.ceil(totalCount / pageDetail.pageSize);
-
-    // update pageCount state
-    if (pageCount !== pageDetail.pageCount) {
-      setPageDetail((prev) => ({ ...prev, pageCount }));
+    // If role filter is "all" or empty, use all response data
+    if (roleFilter === "all" || roleFilter === "") {
+      return response;
     }
 
-    return filteredResponse.slice(start, end);
-  }, [filteredResponse, pageDetail.pageIndex, pageDetail.pageSize]);
+    // Apply role filter client-side
+    const filtered = response.filter((item) =>
+      item.role?.name?.toLowerCase().includes(roleFilter.toLowerCase())
+    );
 
-  const handlePagination = (index: number, size: number) => {
-    setPageDetail({
-      ...pageDetail,
-      pageIndex: index,
-      pageSize: size,
-    });
+    return filtered;
+  }, [response, roleFilter]);
+
+  const handlePagination = (pageIndex: number, pageSize: number) => {
+    setPageDetail((prev) => ({
+      ...prev,
+      pageIndex,
+      pageSize,
+    }));
   };
 
   return (
     <PageLayout
       filters={filterFields}
       filterColumnsPerRow={1}
-      // actions={actions}
+      actions={actions}
       title="Assigned Users"
-      description="List of all assigned users"
+      description={`Users assigned to ${internal_node_name}`}
     >
       <DataTable
         columns={columns}
@@ -186,9 +218,10 @@ export default function InternalNodeUsersListConfig({
         tablePageSize={pageDetail.pageSize}
         totalPageCount={pageDetail.pageCount}
         currentIndex={pageDetail.pageIndex}
+        isLoading={isLoading}
       />
+
       {/* <AssignUserModal
-        inistitute_id={inistitute_id}
         project_id={projectId}
         internal_node_id={internal_node_id}
         internal_node_name={internal_node_name}

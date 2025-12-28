@@ -24,8 +24,6 @@ const bcrypt = require("bcrypt");
 const { generateRandomPassword } = require("../utils/password");
 const { sendEmail } = require("../utils/sendEmail");
 
-const { getPagination, getPagingData } = require("../utils/pagination");
-
 const getUserTypes = async (req, res) => {
   try {
     const userTypes = await UserType.findAll({
@@ -716,9 +714,106 @@ const getUsersAssignedToNode = async (req, res) => {
     });
   }
 };
+// const getInternalUsersAssignedToNode = async (req, res) => {
+//   try {
+//     const { project_id, internal_node_id } = req.params;
+
+//     // Validate project
+//     const project = await Project.findByPk(project_id);
+//     if (!project) {
+//       return res.status(404).json({
+//         success: false,
+//         message: `Project with id '${project_id}' not found.`,
+//       });
+//     }
+
+//     // Validate hierarchy node
+//     const internalNode = await InternalNode.findOne({
+//       where: { internal_node_id },
+//     });
+
+//     if (!internalNode) {
+//       return res.status(404).json({
+//         success: false,
+//         message: `Internal node '${internal_node_id}' not found in project '${project_id}'.`,
+//       });
+//     }
+
+//     // Fetch assignments from junction table
+//     const userAssignments = await InternalProjectUserRole.findAll({
+//       where: {
+//         project_id,
+//         internal_node_id,
+//       },
+//       include: [
+//         {
+//           model: User,
+//           as: "user",
+//           attributes: ["user_id", "full_name", "email"],
+//         },
+//         {
+//           model: Role,
+//           as: "role",
+//           attributes: ["role_id", "name"],
+//         },
+//         {
+//           model: ProjectMetric,
+//           as: "projectMetric",
+//           attributes: ["project_metric_id", "name", "description"],
+//         },
+//         {
+//           model: InternalNode,
+//           as: "internalNode",
+//           attributes: ["internal_node_id", "name"],
+//         },
+//       ],
+//       order: [["created_at", "DESC"]],
+//     });
+
+//     // Transform and return
+//     const users = userAssignments.map((assignment) => ({
+//       project_user_role_id: assignment.project_user_role_id,
+//       project_id: assignment.project_id,
+//       user_id: assignment.user_id,
+//       role_id: assignment.role_id,
+//       internal_node_id: assignment.internal_node_id,
+
+//       user: assignment.user,
+//       role: assignment.role,
+//       internalNode: assignment.internalNode,
+
+//       is_active: assignment.is_active,
+//       assigned_at: assignment.created_at,
+//     }));
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Users assigned to hierarchy node fetched successfully.",
+//       project_id,
+//       internal_node_id,
+//       count: users.length,
+//       data: users,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching users assigned to node:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const getInternalUsersAssignedToNode = async (req, res) => {
   try {
     const { project_id, internal_node_id } = req.params;
+
+    // ====== Get search and pagination from query params ======
+    const {
+      search, // optional: for user name/email search
+      page = 1,
+      pageSize = 10,
+    } = req.query;
 
     // Validate project
     const project = await Project.findByPk(project_id);
@@ -741,39 +836,74 @@ const getInternalUsersAssignedToNode = async (req, res) => {
       });
     }
 
-    // Fetch assignments from junction table
-    const userAssignments = await InternalProjectUserRole.findAll({
-      where: {
-        project_id,
-        internal_node_id,
+    // ====== Calculate pagination ======
+    const pageNum = parseInt(page);
+    const limit = parseInt(pageSize);
+    const offset = (pageNum - 1) * limit;
+
+    // ====== Build where clause for assignments ======
+    const assignmentWhereClause = {
+      project_id,
+      internal_node_id,
+    };
+
+    // ====== Build include conditions for search ======
+    const includeConditions = [
+      {
+        model: User,
+        as: "user",
+        attributes: ["user_id", "full_name", "email"],
+        required: false, // Make it LEFT JOIN for search
       },
-      include: [
-        {
-          model: User,
-          as: "user",
-          attributes: ["user_id", "full_name", "email"],
-        },
-        {
-          model: Role,
-          as: "role",
-          attributes: ["role_id", "name"],
-        },
-        {
-          model: ProjectMetric,
-          as: "projectMetric",
-          attributes: ["project_metric_id", "name", "description"],
-        },
-        {
-          model: InternalNode,
-          as: "internalNode",
-          attributes: ["internal_node_id", "name"],
-        },
-      ],
+      {
+        model: Role,
+        as: "role",
+        attributes: ["role_id", "name"],
+      },
+      {
+        model: ProjectMetric,
+        as: "projectMetric",
+        attributes: ["project_metric_id", "name", "description"],
+      },
+      {
+        model: InternalNode,
+        as: "internalNode",
+        attributes: ["internal_node_id", "name"],
+      },
+    ];
+
+    // ====== Add search condition ======
+    if (search) {
+      // Set user as required for search
+      includeConditions[0].required = true;
+
+      // Add search condition to user model
+      includeConditions[0].where = {
+        [Op.or]: [
+          { full_name: { [Op.like]: `%${search}%` } },
+          { email: { [Op.like]: `%${search}%` } },
+        ],
+      };
+
+      // Alternatively, you can search in role name too
+      // includeConditions[1].required = true;
+      // includeConditions[1].where = {
+      //   name: { [Op.like]: `%${search}%` },
+      // };
+    }
+
+    // ====== Fetch assignments from junction table with pagination ======
+    const userAssignments = await InternalProjectUserRole.findAndCountAll({
+      where: assignmentWhereClause,
+      include: includeConditions,
       order: [["created_at", "DESC"]],
+      limit: limit,
+      offset: offset,
+      distinct: true, // Important for correct count when using includes
     });
 
     // Transform and return
-    const users = userAssignments.map((assignment) => ({
+    const users = userAssignments.rows.map((assignment) => ({
       project_user_role_id: assignment.project_user_role_id,
       project_id: assignment.project_id,
       user_id: assignment.user_id,
@@ -788,13 +918,24 @@ const getInternalUsersAssignedToNode = async (req, res) => {
       assigned_at: assignment.created_at,
     }));
 
+    // ====== Calculate pagination metadata ======
+    const totalPages = Math.ceil(userAssignments.count / limit);
+
     return res.status(200).json({
       success: true,
       message: "Users assigned to hierarchy node fetched successfully.",
       project_id,
       internal_node_id,
+      search_query: search || null,
       count: users.length,
+      total_count: userAssignments.count,
       data: users,
+      meta: {
+        page: pageNum,
+        pageSize: limit,
+        total: userAssignments.count,
+        totalPages: totalPages,
+      },
     });
   } catch (error) {
     console.error("Error fetching users assigned to node:", error);
@@ -805,6 +946,7 @@ const getInternalUsersAssignedToNode = async (req, res) => {
     });
   }
 };
+
 const getUsersAssignedToProject = async (req, res) => {
   try {
     const { project_id } = req.params;
@@ -865,9 +1007,75 @@ const getUsersAssignedToProject = async (req, res) => {
   }
 };
 
+// const getInternalUsersAssignedToProject = async (req, res) => {
+//   try {
+//     const { project_id } = req.params;
+
+//     if (!project_id) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Project ID is required.",
+//       });
+//     }
+
+//     const assignments = await InternalProjectUserRole.findAll({
+//       where: { project_id },
+//       include: [
+//         {
+//           model: User,
+//           as: "user",
+//           include: [
+//             {
+//               model: UserType,
+//               as: "userType",
+//               attributes: ["user_type_id", "name"],
+//             },
+//           ],
+//         },
+//         {
+//           model: Role,
+//           as: "role",
+//           attributes: ["role_id", "name"],
+//         },
+//         {
+//           model: InternalNode,
+//           as: "internalNode",
+//           attributes: ["internal_node_id", "name", "level", "parent_id"],
+//         },
+//         {
+//           model: ProjectMetric,
+//           as: "projectMetric",
+//         },
+//       ],
+//       order: [["created_at", "DESC"]],
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Users assigned to project fetched successfully.",
+//       count: assignments.length,
+//       data: assignments,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching assigned users:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch assigned users.",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const getInternalUsersAssignedToProject = async (req, res) => {
   try {
     const { project_id } = req.params;
+
+    // ====== Get search and pagination from query params ======
+    const {
+      search, // optional: for user name/email search
+      page = 1,
+      pageSize = 10,
+    } = req.query;
 
     if (!project_id) {
       return res.status(400).json({
@@ -876,43 +1084,127 @@ const getInternalUsersAssignedToProject = async (req, res) => {
       });
     }
 
-    const assignments = await InternalProjectUserRole.findAll({
-      where: { project_id },
-      include: [
-        {
-          model: User,
-          as: "user",
-          include: [
-            {
-              model: UserType,
-              as: "userType",
-              attributes: ["user_type_id", "name"],
-            },
-          ],
-        },
-        {
-          model: Role,
-          as: "role",
-          attributes: ["role_id", "name"],
-        },
-        {
-          model: InternalNode,
-          as: "internalNode",
-          attributes: ["internal_node_id", "name", "level", "parent_id"],
-        },
-        {
-          model: ProjectMetric,
-          as: "projectMetric",
-        },
-      ],
+    // Validate project exists
+    const project = await Project.findByPk(project_id);
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: `Project with id '${project_id}' not found.`,
+      });
+    }
+
+    // ====== Calculate pagination ======
+    const pageNum = parseInt(page);
+    const limit = parseInt(pageSize);
+    const offset = (pageNum - 1) * limit;
+
+    // ====== Build where clause for assignments ======
+    const assignmentWhereClause = {
+      project_id,
+    };
+
+    // ====== Build include conditions ======
+    const includeConditions = [
+      {
+        model: User,
+        as: "user",
+        include: [
+          {
+            model: UserType,
+            as: "userType",
+            attributes: ["user_type_id", "name"],
+          },
+        ],
+        required: false, // Make it LEFT JOIN for search
+      },
+      {
+        model: Role,
+        as: "role",
+        attributes: ["role_id", "name"],
+      },
+      {
+        model: InternalNode,
+        as: "internalNode",
+        attributes: ["internal_node_id", "name", "level", "parent_id"],
+      },
+      {
+        model: ProjectMetric,
+        as: "projectMetric",
+      },
+    ];
+
+    // ====== Add search condition ======
+    if (search) {
+      // Set user as required for search
+      includeConditions[0].required = true;
+
+      // Add search condition to user model
+      includeConditions[0].where = {
+        [Op.or]: [
+          { full_name: { [Op.like]: `%${search}%` } },
+          { email: { [Op.like]: `%${search}%` } },
+        ],
+      };
+
+      // Optional: Also search in role name
+      // includeConditions[1].required = true;
+      // includeConditions[1].where = {
+      //   name: { [Op.like]: `%${search}%` }
+      // };
+
+      // Optional: Also search in internal node name
+      // includeConditions[2].required = true;
+      // includeConditions[2].where = {
+      //   name: { [Op.like]: `%${search}%` }
+      // };
+    }
+
+    // ====== Fetch assignments with pagination ======
+    const assignments = await InternalProjectUserRole.findAndCountAll({
+      where: assignmentWhereClause,
+      include: includeConditions,
       order: [["created_at", "DESC"]],
+      limit: limit,
+      offset: offset,
+      distinct: true, // Important for correct count when using includes
     });
+
+    // ====== Transform data if needed ======
+    const transformedAssignments = assignments.rows.map((assignment) => ({
+      project_user_role_id: assignment.project_user_role_id,
+      project_id: assignment.project_id,
+      user_id: assignment.user_id,
+      role_id: assignment.role_id,
+      internal_node_id: assignment.internal_node_id,
+      project_metric_id: assignment.project_metric_id,
+
+      user: assignment.user,
+      role: assignment.role,
+      internalNode: assignment.internalNode,
+      projectMetric: assignment.projectMetric,
+
+      is_active: assignment.is_active,
+      created_at: assignment.created_at,
+      updated_at: assignment.updated_at,
+    }));
+
+    // ====== Calculate pagination metadata ======
+    const totalPages = Math.ceil(assignments.count / limit);
 
     return res.status(200).json({
       success: true,
       message: "Users assigned to project fetched successfully.",
-      count: assignments.length,
-      data: assignments,
+      project_id,
+      search_query: search || null,
+      count: transformedAssignments.length,
+      total_count: assignments.count,
+      data: transformedAssignments,
+      meta: {
+        page: pageNum,
+        pageSize: limit,
+        total: assignments.count,
+        totalPages: totalPages,
+      },
     });
   } catch (error) {
     console.error("Error fetching assigned users:", error);

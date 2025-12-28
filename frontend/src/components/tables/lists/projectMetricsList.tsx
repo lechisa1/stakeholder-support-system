@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Edit, Trash2, Eye } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "../../ui/cn/button";
 import { PageLayout } from "../../common/PageLayout";
 import { DataTable } from "../../common/CommonTable";
@@ -23,6 +24,9 @@ export default function ProjectMetricsList() {
   const [isModalOpen, setModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [editMetricId, setEditMetricId] = useState<string>("");
+
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
@@ -77,10 +81,10 @@ export default function ProjectMetricsList() {
                 variant="outline"
                 size="sm"
                 className="h-8 w-8 p-0"
-                  onClick={() => {
-                    setEditModalOpen(true);
-                    setEditMetricId(metric.project_metric_id);
-                  }}
+                onClick={() => {
+                  setEditModalOpen(true);
+                  setEditMetricId(metric.project_metric_id);
+                }}
               >
                 <Edit className="h-4 w-4" />
               </Button>
@@ -104,7 +108,15 @@ export default function ProjectMetricsList() {
     },
   ].filter(Boolean);
 
-  const { data, isLoading, isError } = useGetProjectMetricsQuery({});
+  const { data, isLoading, isError, refetch } = useGetProjectMetricsQuery({
+    search: searchQuery,
+    page: pageDetail.pageIndex + 1,
+    pageSize: pageDetail.pageSize,
+  });
+
+  useEffect(() => {
+    refetch();
+  }, [searchQuery, pageDetail.pageIndex, pageDetail.pageSize, refetch]);
 
   const actions: ActionButton[] = [
     {
@@ -134,18 +146,32 @@ export default function ProjectMetricsList() {
     },
   ];
 
+  // --- Convert API data to array ---
   useEffect(() => {
     if (!isError && !isLoading && data) {
-      // Map API response to ensure projects and users arrays exist
-      const mapped = (data || []).map((metric: any) => ({
-        ...metric,
-        projects: metric.projects || [],
-        users: metric.users || [],
-      }));
-      setResponse(mapped);
-      setFilteredResponse(mapped);
+      const metrics = Array.isArray(data) ? data : data.data || [];
+      setResponse(metrics);
+
+      const filtered = metrics.filter((metric) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "active") return metric.is_active;
+        if (statusFilter === "inactive") return !metric.is_active;
+        return true;
+      });
+      setFilteredResponse(filtered);
+      if (data.meta) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.meta.totalPages || 1,
+        }));
+      } else if (data.pageCount !== undefined) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.pageCount,
+        }));
+      }
     }
-  }, [data, isError, isLoading]);
+  }, [data, isError, isLoading, statusFilter]);
 
   useEffect(() => {
     const filtered = response.filter((item) => {
@@ -157,12 +183,12 @@ export default function ProjectMetricsList() {
     setFilteredResponse(filtered);
   }, [response, statusFilter]);
 
-  const handlePagination = (index: number, size: number) => {
-    setPageDetail({
-      ...pageDetail,
-      pageIndex: index,
-      pageSize: size,
-    });
+  const handlePagination = (pageIndex: number, pageSize: number) => {
+    setPageDetail((prev) => ({
+      ...prev,
+      pageIndex,
+      pageSize,
+    }));
   };
 
   return (
@@ -181,6 +207,7 @@ export default function ProjectMetricsList() {
           tablePageSize={pageDetail.pageSize}
           totalPageCount={pageDetail.pageCount}
           currentIndex={pageDetail.pageIndex}
+          isLoading={isLoading}
         />
       </PageLayout>
 

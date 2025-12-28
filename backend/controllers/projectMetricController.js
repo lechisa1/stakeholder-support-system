@@ -80,12 +80,30 @@ const createProjectMetric = async (req, res) => {
 // -----------------------------------------------------
 const getProjectMetrics = async (req, res) => {
   try {
-    const { is_active } = req.query;
+    const {
+      is_active,
+      search, // optional: for name/email search
+      page = 1,
+      pageSize = 10,
+    } = req.query;
 
     const whereClause = {};
-    if (is_active !== undefined) {
-      whereClause.is_active = is_active === "true";
+    if (is_active !== undefined) whereClause.is_active = is_active === "true";
+
+    if (search) {
+      whereClause[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+      ];
     }
+
+    // ====== Calculate pagination ======
+    const pageNum = parseInt(page);
+    const limit = parseInt(pageSize);
+    const offset = (pageNum - 1) * limit;
+
+    // ====== Fetch total count ======
+    const total = await ProjectMetric.count({ where: whereClause });
 
     const metrics = await ProjectMetric.findAll({
       where: whereClause,
@@ -101,9 +119,24 @@ const getProjectMetrics = async (req, res) => {
           through: { attributes: ["value"] }, // Include value from junction table
         },
       ],
+      order: [["created_at", "DESC"]],
+      limit: limit,
+      offset: offset,
     });
 
-    res.status(200).json(metrics);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json({
+      success: true,
+      message: "Project metrics fetched successfully.",
+      data: metrics,
+      meta: {
+        page: pageNum,
+        pageSize: limit,
+        total: total,
+        totalPages: totalPages,
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({

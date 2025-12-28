@@ -5,6 +5,7 @@ const {
   User,
 } = require("../models");
 const { v4: uuidv4 } = require("uuid");
+const { Op } = require("sequelize");
 
 // Create Internal Node
 const createInternalNode = async (req, res) => {
@@ -47,15 +48,72 @@ const createInternalNode = async (req, res) => {
 // Get ALL nodes
 const getInternalNodes = async (req, res) => {
   try {
-    const nodes = await InternalNode.findAll({
+    const {
+      parent_id,
+      is_active,
+      search, // optional: for name/email search
+      page = 1,
+      pageSize = 10,
+    } = req.query;
+
+    // ====== Build filters dynamically ======
+    const whereClause = {};
+
+    if (parent_id) whereClause.parent_id = parent_id;
+    if (is_active !== undefined) whereClause.is_active = is_active === "true";
+
+    if (search) {
+      whereClause[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        { "$parent.name$": { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    // ====== Calculate pagination ======
+    const pageNum = parseInt(page);
+    const limit = parseInt(pageSize);
+    const offset = (pageNum - 1) * limit;
+
+    // ====== Fetch total count ======
+    const total = await InternalNode.count({
+      where: whereClause,
       include: [
-        { model: InternalNode, as: "parent" },
+        {
+          model: InternalNode,
+          as: "parent",
+          required: false, // IMPORTANT
+        },
+      ],
+      distinct: true,
+      subQuery: false, // IMPORTANT
+    });
+
+    const nodes = await InternalNode.findAll({
+      where: whereClause,
+      include: [
+        { model: InternalNode, as: "parent", required: false },
         { model: InternalNode, as: "children" },
       ],
       order: [["created_at", "ASC"]],
+      limit: limit,
+      offset: offset,
+      subQuery: false,
     });
 
-    res.status(200).json(nodes);
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json({
+      success: true,
+      message: "Internal nodes fetched successfully.",
+      data: nodes,
+      meta: {
+        page: pageNum,
+        pageSize: limit,
+        total: total,
+        totalPages: totalPages,
+      },
+    });
   } catch (error) {
     console.error("Error fetching internal nodes:", error);
     res.status(500).json({ message: error.message });

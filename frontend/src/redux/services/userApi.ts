@@ -49,6 +49,54 @@ export interface User {
   institute?: Institute;
   hierarchyNode?: HierarchyNode;
 }
+
+export interface InternalNodeUserAssignment {
+  project_user_role_id: string;
+  project_id: string;
+  user_id: string;
+  role_id: string;
+  internal_node_id: string;
+  user: User;
+  role: {
+    role_id: string;
+    name: string;
+  };
+  internalNode: {
+    internal_node_id: string;
+    name: string;
+  };
+  is_active: boolean;
+  assigned_at: string;
+}
+
+export interface InternalProjectUserAssignment {
+  project_user_role_id: string;
+  project_id: string;
+  user_id: string;
+  role_id: string;
+  internal_node_id: string;
+  project_metric_id?: string;
+  user: User;
+  role: {
+    role_id: string;
+    name: string;
+  };
+  internalNode: {
+    internal_node_id: string;
+    name: string;
+    level: number;
+    parent_id?: string;
+  };
+  projectMetric?: {
+    project_metric_id: string;
+    name: string;
+    description?: string;
+  };
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PaginationMeta {
   page: number;
   pageSize: number;
@@ -98,6 +146,44 @@ export interface GetUsersParams {
   search?: string;
   page?: number;
   pageSize?: number;
+}
+
+export interface GetInternalNodeUsersParams {
+  project_id: string;
+  internal_node_id: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface GetInternalProjectUsersParams {
+  project_id: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface InternalNodeUsersResponse {
+  success: boolean;
+  message: string;
+  project_id: string;
+  internal_node_id: string;
+  search_query?: string;
+  count: number;
+  total_count: number;
+  data: InternalNodeUserAssignment[];
+  meta?: PaginationMeta;
+}
+
+export interface InternalProjectUsersResponse {
+  success: boolean;
+  message: string;
+  project_id: string;
+  search_query?: string;
+  count: number;
+  total_count: number;
+  data: InternalProjectUserAssignment[];
+  meta?: PaginationMeta;
 }
 
 // --------------------- API ---------------------
@@ -150,13 +236,44 @@ export const userApi = baseApi.injectEndpoints({
     }),
 
     // Get users by project + Internal node
+    // getUsersByInternalNodeId: builder.query<
+    //   any,
+    //   { project_id: string; internal_node_id: string }
+    // >({
+    //   query: ({ project_id, internal_node_id }) =>
+    //     `/users/project/internal/${project_id}/node/${internal_node_id}`,
+    //   providesTags: ["User"],
+    // }),
+
     getUsersByInternalNodeId: builder.query<
-      any,
-      { project_id: string; internal_node_id: string }
+      InternalNodeUsersResponse,
+      GetInternalNodeUsersParams
     >({
-      query: ({ project_id, internal_node_id }) =>
-        `/users/project/internal/${project_id}/node/${internal_node_id}`,
-      providesTags: ["User"],
+      query: ({
+        project_id,
+        internal_node_id,
+        search,
+        page = 1,
+        pageSize = 10,
+      }) => {
+        // Build query string
+        const queryParams: Record<string, string> = {};
+
+        queryParams.page = page.toString();
+        queryParams.pageSize = pageSize.toString();
+
+        if (search) queryParams.search = search;
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/users/project/internal/${project_id}/node/${internal_node_id}${queryString}`;
+      },
+      providesTags: (result, error, params) => [
+        {
+          type: "User",
+          id: `project-${params.project_id}-node-${params.internal_node_id}`,
+        },
+        "User",
+      ],
     }),
 
     // Get all users assigned to a project
@@ -166,10 +283,34 @@ export const userApi = baseApi.injectEndpoints({
     }),
 
     // Get all users assigned to a project
-    getInternalUsersAssignedToProject: builder.query<any, string>({
-      query: (project_id) => `/users/project/internal/${project_id}`,
-      providesTags: ["User"],
+    getInternalUsersAssignedToProject: builder.query<
+      InternalProjectUsersResponse,
+      GetInternalProjectUsersParams
+    >({
+      query: ({ project_id, search, page = 1, pageSize = 10 }) => {
+        // Build query string
+        const queryParams: Record<string, string> = {};
+
+        queryParams.page = page.toString();
+        queryParams.pageSize = pageSize.toString();
+
+        if (search) queryParams.search = search;
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/users/project/internal/${project_id}${queryString}`;
+      },
+      providesTags: (result, error, params) => [
+        {
+          type: "User",
+          id: `project-internal-${params.project_id}`,
+        },
+        "User",
+      ],
     }),
+    // getInternalUsersAssignedToProject: builder.query<any, string>({
+    //   query: (project_id) => `/users/project/internal/${project_id}`,
+    //   providesTags: ["User"],
+    // }),
 
     // Get users from an institute NOT assigned to a project
     getUsersNotAssignedToProject: builder.query<

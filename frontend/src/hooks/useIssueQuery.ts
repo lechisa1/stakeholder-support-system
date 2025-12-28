@@ -1,12 +1,20 @@
 import { useAuth } from "../contexts/AuthContext";
 import {
   useGetAssignedIssuesQuery,
-  useGetEscalatedIssuesWithNullTierQuery,
   useGetIssuesByProjectIdsQuery,
 } from "../redux/services/issueApi";
+import { useSearchParams } from "react-router-dom";
 
-export const useIssuesQuery = (userId: string, internalNode: any) => {
+export const useIssuesQuery = (
+  userId: string,
+  internalNode: any,
+  page: number,
+  pageSize: number
+) => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
+
   console.log("user: ", user);
   const hasParentNode =
     internalNode?.parent_id !== null && internalNode?.parent_id !== undefined;
@@ -27,12 +35,20 @@ export const useIssuesQuery = (userId: string, internalNode: any) => {
   /**
    * 2. Fetch issues by project IDs (root-level users only)
    */
-  const issuesByProjects = useGetIssuesByProjectIdsQuery(projectIds, {
-    skip:
-      hasParentNode || // skip if user has parent node
-      !userId || // skip if no user
-      projectIds.length === 0, // skip if no projects
-  });
+  const issuesByProjects = useGetIssuesByProjectIdsQuery(
+    {
+      projectIds,
+      search: searchQuery,
+      page,
+      pageSize,
+    },
+    {
+      skip:
+        hasParentNode || // skip if user has parent node
+        !userId || // skip if no user
+        projectIds.length === 0, // skip if no projects
+    }
+  );
 
   console.log("issuesByProjects:", issuesByProjects);
 
@@ -50,10 +66,22 @@ export const useIssuesQuery = (userId: string, internalNode: any) => {
 
   // Return the appropriate query result based on the condition
   if (!hasParentNode) {
-    // No parent → get escalated issues
-    return issuesByProjects;
+    // No parent → get issues by projects with pagination
+    return {
+      ...issuesByProjects,
+      searchQuery,
+      page,
+      pageSize,
+      data: issuesByProjects.data,
+    };
   } else {
     // Has parent → get assigned issues
-    return assignedIssues;
+    return {
+      ...assignedIssues,
+      searchQuery,
+      page,
+      pageSize,
+      data: assignedIssues.data,
+    };
   }
 };

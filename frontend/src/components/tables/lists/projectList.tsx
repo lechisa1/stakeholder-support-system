@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Plus, Eye, Edit, Trash2 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import {
   useGetProjectsQuery,
@@ -28,12 +28,13 @@ export default function ProjectList({
   const [filteredResponse, setFilteredResponse] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isModalOpen, setModalOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
     pageSize: 10,
   });
-  const { id } = useParams<{ id: string }>();
 
   // --- Define table columns ---
   const ProjectTableColumns = [
@@ -141,15 +142,43 @@ export default function ProjectList({
   ];
 
   // const { data, isLoading, isError } = useGetProjectsQuery();
-  const { data, isLoading, isError } =
-    useGetProjectsByInstituteIdQuery(insistitute_id);
+  const { data, isLoading, isError, refetch } = useGetProjectsQuery({
+    institute_id: insistitute_id,
+    search: searchQuery,
+    page: pageDetail.pageIndex + 1,
+    pageSize: pageDetail.pageSize,
+  });
 
   useEffect(() => {
+    refetch();
+  }, [searchQuery, pageDetail.pageIndex, pageDetail.pageSize, refetch]);
+
+  // --- Convert API data to array ---
+  useEffect(() => {
     if (!isError && !isLoading && data) {
-      setResponse(data || []);
-      setFilteredResponse(data || []);
+      const projects = Array.isArray(data) ? data : data.data || [];
+      setResponse(projects);
+
+      const filtered = projects.filter((project) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "active") return project.is_active;
+        if (statusFilter === "inactive") return !project.is_active;
+        return true;
+      });
+      setFilteredResponse(filtered);
+      if (data.meta) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.meta.totalPages || 1,
+        }));
+      } else if (data.pageCount !== undefined) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.pageCount,
+        }));
+      }
     }
-  }, [data, isError, isLoading]);
+  }, [data, isError, isLoading, statusFilter]);
 
   useEffect(() => {
     const filtered = response.filter((item) => {
@@ -161,12 +190,12 @@ export default function ProjectList({
     setFilteredResponse(filtered);
   }, [response, statusFilter]);
 
-  const handlePagination = (index: number, size: number) => {
-    setPageDetail({
-      ...pageDetail,
-      pageIndex: index,
-      pageSize: size,
-    });
+  const handlePagination = (pageIndex: number, pageSize: number) => {
+    setPageDetail((prev) => ({
+      ...prev,
+      pageIndex,
+      pageSize,
+    }));
   };
 
   return (
@@ -185,6 +214,7 @@ export default function ProjectList({
           tablePageSize={pageDetail.pageSize}
           totalPageCount={pageDetail.pageCount}
           currentIndex={pageDetail.pageIndex}
+          isLoading={isLoading}
         />
       </PageLayout>
       <CreateProjectModal

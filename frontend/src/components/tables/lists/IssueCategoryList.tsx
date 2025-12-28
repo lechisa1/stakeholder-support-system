@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   useGetIssueCategoriesQuery,
   useDeleteIssueCategoryMutation,
@@ -27,16 +28,27 @@ export default function IssueCategoryList() {
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(
-    null
-  );
+  const [selectedCategory, setSelectedCategory] =
+    useState<IssueCategory | null>(null);
+
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
   const [pageDetail, setPageDetail] = useState({
     pageIndex: 0,
     pageCount: 1,
     pageSize: 10,
   });
 
-  const { data, isLoading, isError } = useGetIssueCategoriesQuery();
+  const { data, isLoading, isError, refetch } = useGetIssueCategoriesQuery({
+    search: searchQuery,
+    page: pageDetail.pageIndex + 1,
+    pageSize: pageDetail.pageSize,
+  });
+
+  useEffect(() => {
+    refetch();
+  }, [searchQuery, pageDetail.pageIndex, pageDetail.pageSize, refetch]);
+
   const [deleteCategory, { isLoading: isDeleting }] =
     useDeleteIssueCategoryMutation();
 
@@ -69,12 +81,32 @@ export default function IssueCategoryList() {
     },
   ];
 
+  // --- Convert API data to array ---
   useEffect(() => {
     if (!isError && !isLoading && data) {
-      setResponse(data || []);
-      setFilteredResponse(data || []);
+      const categories = Array.isArray(data) ? data : data.data || [];
+      setResponse(categories);
+
+      const filtered = categories.filter((category) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "active") return category.is_active;
+        if (statusFilter === "inactive") return !category.is_active;
+        return true;
+      });
+      setFilteredResponse(filtered);
+      if (data.meta) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.meta.totalPages || 1,
+        }));
+      } else if (data.pageCount !== undefined) {
+        setPageDetail((prev) => ({
+          ...prev,
+          pageCount: data.pageCount,
+        }));
+      }
     }
-  }, [data, isError, isLoading]);
+  }, [data, isError, isLoading, statusFilter]);
 
   useEffect(() => {
     const filtered = response.filter((item) => {
@@ -86,8 +118,12 @@ export default function IssueCategoryList() {
     setFilteredResponse(filtered);
   }, [response, statusFilter]);
 
-  const handlePagination = (index: number, size: number) => {
-    setPageDetail({ ...pageDetail, pageIndex: index, pageSize: size });
+  const handlePagination = (pageIndex: number, pageSize: number) => {
+    setPageDetail((prev) => ({
+      ...prev,
+      pageIndex,
+      pageSize,
+    }));
   };
 
   const handleDeleteClick = (categoryId: string) => {
@@ -142,11 +178,7 @@ export default function IssueCategoryList() {
     {
       id: "actions",
       header: "Actions",
-      cell: ({
-        row,
-      }: {
-        row: { original: IssueCategory };
-      }) => {
+      cell: ({ row }: { row: { original: IssueCategory } }) => {
         const category = row.original;
         return (
           <div className="flex items-center space-x-2">
@@ -195,6 +227,7 @@ export default function IssueCategoryList() {
           tablePageSize={pageDetail.pageSize}
           totalPageCount={pageDetail.pageCount}
           currentIndex={pageDetail.pageIndex}
+          isLoading={isLoading}
         />
       </PageLayout>
 

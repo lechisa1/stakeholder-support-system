@@ -1,5 +1,6 @@
 const { Institute, Project, InstituteAttachment } = require("../models");
 const { v4: uuidv4 } = require("uuid");
+const { Op } = require("sequelize");
 
 // Create a new institute
 const createInstitute = async (req, res) => {
@@ -61,13 +62,30 @@ const createInstitute = async (req, res) => {
 // Get all institutes
 const getInstitutes = async (req, res) => {
   try {
-    const { is_active } = req.query;
+    const {
+      is_active,
+      search, // optional: for name/email search
+      page = 1,
+      pageSize = 10,
+    } = req.query;
 
     // Build where clause for filtering
     const whereClause = {};
-    if (is_active !== undefined) {
-      whereClause.is_active = is_active === "true";
+
+    if (is_active !== undefined) whereClause.is_active = is_active === "true";
+
+    if (search) {
+      // console.log("Search query:", search);
+      whereClause[Op.or] = [{ name: { [Op.like]: `%${search}%` } }];
     }
+
+    // ====== Calculate pagination ======
+    const pageNum = parseInt(page);
+    const limit = parseInt(pageSize);
+    const offset = (pageNum - 1) * limit;
+
+    // ====== Fetch total count ======
+    const total = await Institute.count({ where: whereClause });
 
     const institutes = await Institute.findAll({
       where: whereClause,
@@ -78,8 +96,24 @@ const getInstitutes = async (req, res) => {
           through: { attributes: ["is_active"] },
         },
       ],
+      order: [["created_at", "DESC"]],
+      limit: limit,
+      offset: offset,
     });
-    res.status(200).json(institutes);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return res.status(200).json({
+      success: true,
+      message: "Institutes fetched successfully.",
+      data: institutes,
+      meta: {
+        page: pageNum,
+        pageSize: limit,
+        total: total,
+        totalPages: totalPages,
+      },
+    });
   } catch (error) {
     console.error(error);
     res
