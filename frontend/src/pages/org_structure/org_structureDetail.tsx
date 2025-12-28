@@ -1,16 +1,17 @@
-import { useParams, Link } from "react-router-dom";
-import { useGetHierarchyNodeByIdQuery } from "../../redux/services/hierarchyNodeApi";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import {
+  useGetHierarchyNodeByIdQuery,
+  useDeleteHierarchyNodeMutation,
+} from "../../redux/services/hierarchyNodeApi";
 import PageMeta from "../../components/common/PageMeta";
 import Badge from "../../components/ui/badge/Badge";
 import { format } from "date-fns";
 import {
   RectangleStackIcon,
-  CalendarIcon,
   CheckCircleIcon,
   XCircleIcon,
   ArrowLeftIcon,
   FolderIcon,
-  ArrowUpIcon,
   BuildingOfficeIcon,
 } from "@heroicons/react/24/outline";
 import { Card, CardTitle, CardContent } from "../../components/ui/cn/card";
@@ -21,24 +22,23 @@ import { useState } from "react";
 import { CreateChildHierarchyNodeModal } from "../../components/modals/CreateChildHierarchyNodeModal";
 import HierarchyUsersList from "../../components/tables/lists/HierarchyUsersList";
 import { ComponentGuard } from "../../components/common/ComponentGuard";
+import DeleteModal from "../../components/common/DeleteModal";
+import { toast } from "sonner";
+import { UpdateHierarchyNodeModal } from "../../components/modals/EditHierarchyNodeModal";
 
 const OrgStructureDetail = () => {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const {
     data: orgStructure,
     isLoading,
     isError,
   } = useGetHierarchyNodeByIdQuery(id!);
-
-  const formatDateShort = (dateString?: string) => {
-    if (!dateString) return "N/A";
-    try {
-      return format(new Date(dateString), "MMM dd, yyyy");
-    } catch {
-      return dateString;
-    }
-  };
+  const [deleteHierarchyNode, { isLoading: isDeleteLoading }] =
+    useDeleteHierarchyNodeMutation();
 
   const formatDateWithTime = (dateString?: string) => {
     if (!dateString) return "N/A";
@@ -46,6 +46,20 @@ const OrgStructureDetail = () => {
       return format(new Date(dateString), "MMM dd, yyyy 'at' h:mm a");
     } catch {
       return dateString;
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteHierarchyNode(id!).unwrap();
+      setIsDeleteModalOpen(false);
+      toast.success("Organization structure deleted successfully");
+      navigate("/org_structure");
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { data?: { message?: string } })?.data?.message ||
+        "Failed to delete organization structure";
+      toast.error(errorMessage);
     }
   };
 
@@ -92,6 +106,24 @@ const OrgStructureDetail = () => {
 
   return (
     <>
+      <ComponentGuard permissions={["PROJECT_STRUCTURES:DELETE"]}>
+        <DeleteModal
+          message="Are you sure you want to delete this organization structure? This action cannot be undone."
+          onCancel={() => setIsDeleteModalOpen(false)}
+          onDelete={handleDelete}
+          open={isDeleteModalOpen}
+          isLoading={isDeleteLoading}
+        />
+      </ComponentGuard>
+
+      <ComponentGuard permissions={["PROJECT_STRUCTURES:UPDATE"]}>
+        <UpdateHierarchyNodeModal
+          isOpen={isUpdateModalOpen}
+          hierarchyNodeId={id || null}
+          onClose={() => setIsUpdateModalOpen(false)}
+        />
+      </ComponentGuard>
+
       <PageMeta
         title={`${orgStructure.name} - Organization Structure Details`}
         description={`View details for ${orgStructure.name}`}
@@ -110,12 +142,18 @@ const OrgStructureDetail = () => {
             <div className="flex justify-center items-end gap-4">
               <ComponentGuard permissions={["PROJECT_STRUCTURES:UPDATE"]}>
                 <span>
-                  <Edit className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold" />
+                  <Edit
+                    onClick={() => setIsUpdateModalOpen(true)}
+                    className="h-5 w-5 text-[#094C81] hover:text-[#073954] cursor-pointer text-bold"
+                  />
                 </span>
               </ComponentGuard>
               <ComponentGuard permissions={["PROJECT_STRUCTURES:DELETE"]}>
                 <span>
-                  <Trash2 className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold" />
+                  <Trash2
+                    onClick={() => setIsDeleteModalOpen(true)}
+                    className="h-5 w-5 text-[#B91C1C] hover:text-[#991B1B] cursor-pointer text-bold"
+                  />
                 </span>
               </ComponentGuard>
             </div>
