@@ -139,9 +139,9 @@ export const projectApi = baseApi.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["Project"],
+      invalidatesTags: ["Project", "InternalNode", "ProjectMetrics"],
     }),
-
+    // useGetMetricUsersQuery invalidatesTags: ["MetricUsers"],
     // Assign internal user to project
     assignInternalUserToProject: builder.mutation<
       any,
@@ -157,7 +157,8 @@ export const projectApi = baseApi.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["Project"],
+      invalidatesTags: ["Project", "InternalNode", "ProjectMetrics"],
+
     }),
 
     // Update project maintenance (timeline)

@@ -12,7 +12,7 @@ import {
 export default function Basedata() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-
+  localStorage.removeItem("current_project_id")
   const cards = [
     {
       title: t("basedata.issue_flow"),

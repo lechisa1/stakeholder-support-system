@@ -54,18 +54,18 @@ export default function AddIssue() {
 
   const userProjects =
     userProjectsResponse?.data?.map((assignment: any) => {
-      const project = assignment.project;
-      return {
-        project_user_role_id: assignment.project_user_role_id,
-        project_id: project.project_id,
-        name: project.name,
-        description: project.description,
-        is_active: project.is_active,
-        hierarchyNode: assignment.hierarchyNode,
-        role: assignment.role,
-        subRole: assignment.subRole,
-        instituteProjects: project.instituteProjects,
-      };
+        const project = assignment.project;
+        return {
+          project_user_role_id: assignment.project_user_role_id,
+          project_id: project.project_id,
+          name: project.name,
+          description: project.description,
+          is_active: project.is_active,
+          hierarchyNode: assignment.hierarchyNode,
+          role: assignment.role,
+          subRole: assignment.subRole,
+          instituteProjects: project.instituteProjects,
+        };
     }) ?? [];
 
   // Fetch Categories & Priorities
@@ -94,22 +94,22 @@ export default function AddIssue() {
     mode: "onSubmit",
     reValidateMode: "onChange",
     defaultValues: {
-      project_id: editData?.project_id ?? "",
-      hierarchy_node_id: editData?.hierarchy_node_id ?? "",
-      issue_category_id: editData?.issue_category_id ?? "",
-      priority_id: editData?.priority_id ?? "",
+    project_id: editData?.project_id ?? "",
+    hierarchy_node_id: editData?.hierarchy_node_id ?? "",
+    issue_category_id: editData?.issue_category_id ?? "",
+    priority_id: editData?.priority_id ?? "",
       issue_occured_time:
         editData?.issue_occured_time ??
         format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-      url_path: editData?.url_path ?? "",
-      description: editData?.description ?? "",
-      action_taken: editData?.action_taken ?? "",
-      action_taken_checkbox: !!editData?.action_taken,
-      attachment_id: editData?.attachment_id
-        ? Array.isArray(editData.attachment_id)
-          ? editData.attachment_id
-          : [editData.attachment_id]
-        : [],
+    url_path: editData?.url_path ?? "",
+    description: editData?.description ?? "",
+    action_taken: editData?.action_taken ?? "",
+    action_taken_checkbox: !!editData?.action_taken,
+    attachment_id: editData?.attachment_id
+      ? Array.isArray(editData.attachment_id)
+        ? editData.attachment_id
+        : [editData.attachment_id]
+      : [],
     },
   });
 
@@ -292,39 +292,39 @@ export default function AddIssue() {
 
                   {field.type === "select" && field.id === "project_id" && (
                     <div className="w-full">
-                      <Select
-                        value={formValues.project_id}
-                        onValueChange={(selectedProjectId) => {
-                          const selectedProject = userProjects.find(
-                            (p) => p.project_id === selectedProjectId
-                          );
+                    <Select
+                      value={formValues.project_id}
+                      onValueChange={(selectedProjectId) => {
+                        const selectedProject = userProjects.find(
+                          (p) => p.project_id === selectedProjectId
+                        );
 
                           handleChange("project_id", selectedProjectId);
                           handleChange(
-                            "hierarchy_node_id",
-                            selectedProject?.hierarchyNode?.hierarchy_node_id ??
+                          "hierarchy_node_id",
+                          selectedProject?.hierarchyNode?.hierarchy_node_id ??
                               null
-                          );
-                        }}
-                      >
+                        );
+                      }}
+                    >
                         <SelectTrigger
                           className={`border h-10 bg-white p-2 rounded mt-1 text-gray-700 ${
-                            errors.project_id
-                              ? "border-red-300"
-                              : "border-gray-300"
+                          errors.project_id
+                            ? "border-red-300"
+                            : "border-gray-300"
                           }`}
                         >
-                          <SelectValue placeholder="Select Project" />
-                        </SelectTrigger>
+                        <SelectValue placeholder="Select Project" />
+                      </SelectTrigger>
 
-                        <SelectContent className="text-[#094C81] *: bg-white">
+                      <SelectContent className="text-[#094C81] *: bg-white">
                           {userProjects.map((p) => (
-                            <SelectItem key={p.project_id} value={p.project_id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                          <SelectItem key={p.project_id} value={p.project_id}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                       {errors.project_id && (
                         <p className="text-xs text-red-500 mt-1">
                           {errors.project_id.message}
@@ -337,33 +337,33 @@ export default function AddIssue() {
                     field.id === "issue_category_id" && (
                       // if the category list is
                       <div className="w-full">
-                        <Select
-                          value={formValues.issue_category_id}
+                      <Select
+                        value={formValues.issue_category_id}
                           onValueChange={(v) =>
                             handleChange("issue_category_id", v)
                           }
                         >
                           <SelectTrigger
                             className={`h-10 border bg-white p-2 rounded mt-1 text-gray-700 ${
-                              errors.issue_category_id
-                                ? "border-red-300"
-                                : "border-gray-300"
+                            errors.issue_category_id
+                              ? "border-red-300"
+                              : "border-gray-300"
                             }`}
                           >
-                            <SelectValue placeholder="Select Category" />
-                          </SelectTrigger>
+                          <SelectValue placeholder="Select Category" />
+                        </SelectTrigger>
 
-                          <SelectContent className="text-[#094C81] *: bg-white">
-                            {categories.map((c) => (
-                              <SelectItem
-                                key={c.category_id}
-                                value={c.category_id}
-                              >
-                                {c.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <SelectContent className="text-[#094C81] *: bg-white">
+                          {categories.map((c) => (
+                            <SelectItem
+                              key={c.category_id}
+                              value={c.category_id}
+                            >
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                         {errors.issue_category_id && (
                           <p className="text-xs text-red-500 mt-1">
                             {errors.issue_category_id.message}
@@ -374,22 +374,22 @@ export default function AddIssue() {
 
                   {field.type === "select" && field.id === "priority_id" && (
                     <div className="w-full">
-                      <Select
-                        value={formValues.priority_id}
-                        onValueChange={(value) => {
+                    <Select
+                      value={formValues.priority_id}
+                      onValueChange={(value) => {
                           setTempPriorityId(value);
                           setShowPriorityModal(true);
                         }}
                       >
                         <SelectTrigger
                           className={`h-10 border bg-white p-2 rounded mt-1 text-gray-700 ${
-                            errors.priority_id
-                              ? "border-red-300"
-                              : "border-gray-300"
+                          errors.priority_id
+                            ? "border-red-300"
+                            : "border-gray-300"
                           }`}
                         >
-                          <SelectValue placeholder="Select Priority" />
-                        </SelectTrigger>
+                        <SelectValue placeholder="Select Priority" />
+                      </SelectTrigger>
 
                         <SelectContent className="text-[#094C81] *: bg-white">
                           {priorities.map((p) => (
@@ -401,7 +401,7 @@ export default function AddIssue() {
                             </SelectItem>
                           ))}
                         </SelectContent>
-                      </Select>
+                    </Select>
                       {errors.priority_id && (
                         <p className="text-xs text-red-500 mt-1">
                           {errors.priority_id.message}
@@ -412,9 +412,9 @@ export default function AddIssue() {
 
                   {field.type === "datetime" && (
                     <div className="w-full">
-                      <Input
-                        id="issue_occured_time"
-                        type="datetime-local"
+                    <Input
+                      id="issue_occured_time"
+                      type="datetime-local"
                         max={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
                         className={`border text-[#094C81] h-10 rounded px-2 py-2 ${
                           errors.issue_occured_time
@@ -434,8 +434,8 @@ export default function AddIssue() {
 
                   {field.type === "textarea" && field.id === "description" && (
                     <div className="w-full">
-                      <TextArea
-                        rows={2}
+                    <TextArea
+                      rows={2}
                         placeholder="Enter description"
                         className={`border   rounded px-2 py-2 ${
                           errors.description
@@ -563,53 +563,53 @@ export default function AddIssue() {
             );
 
             return (
-              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700">
-                  {/* Title */}
-                  <h3 className="text-xl font-semibold text-[#094C81] mb-4 flex items-center gap-2">
-                    Confirm Priority Selection
-                  </h3>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-700">
+              {/* Title */}
+              <h3 className="text-xl font-semibold text-[#094C81] mb-4 flex items-center gap-2">
+                Confirm Priority Selection
+              </h3>
 
-                  {/* Main Message */}
-                  <p className="text-base text-gray-900 dark:text-gray-200">
-                    Are you sure your support request is
-                    <span className="font-bold text-red-600 ml-1">
+              {/* Main Message */}
+              <p className="text-base text-gray-900 dark:text-gray-200">
+                Are you sure your support request is
+                <span className="font-bold text-red-600 ml-1">
                       {selectedPriority?.name}?
-                    </span>
-                  </p>
+                </span>
+              </p>
 
-                  {/* Extra Info */}
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-6 leading-relaxed">
+              {/* Extra Info */}
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-6 leading-relaxed">
                     This Priority is for {selectedPriority?.description || "N/A"} and it will be resolved in {selectedPriority?.response_duration || "N/A"} {selectedPriority?.response_unit || ""}
-                  </p>
+              </p>
 
-                  {/* Buttons */}
-                  <div className="flex justify-end gap-3 mt-2">
-                    <button
-                      onClick={() => {
-                        setShowPriorityModal(false);
+              {/* Buttons */}
+              <div className="flex justify-end gap-3 mt-2">
+                <button
+                  onClick={() => {
+                    setShowPriorityModal(false);
                         setTempPriorityId("");
-                      }}
-                      className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                    >
-                      Cancel
-                    </button>
+                  }}
+                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                >
+                  Cancel
+                </button>
 
-                    <button
-                      onClick={() => {
+                <button
+                  onClick={() => {
                         if (selectedPriority?.priority_id) {
                           handleChange("priority_id", selectedPriority.priority_id);
                         }
-                        setShowPriorityModal(false);
+                    setShowPriorityModal(false);
                         setTempPriorityId("");
-                      }}
-                      className="px-4 py-2 rounded-lg bg-[#094C81] text-white hover:bg-[#07385f] transition shadow-sm"
-                    >
-                      Confirm
-                    </button>
-                  </div>
-                </div>
+                  }}
+                  className="px-4 py-2 rounded-lg bg-[#094C81] text-white hover:bg-[#07385f] transition shadow-sm"
+                >
+                  Confirm
+                </button>
               </div>
+            </div>
+          </div>
             );
           })()}
       </div>

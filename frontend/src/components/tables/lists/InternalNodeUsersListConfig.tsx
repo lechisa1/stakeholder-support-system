@@ -12,6 +12,7 @@ import { ActionButton, FilterField } from "../../../types/layout";
 import { useRemoveUserFromProjectMutation } from "../../../redux/services/projectApi";
 import AssignUserModal from "../../modals/AssignUserToProjectModal";
 import { useGetUsersByInternalNodeIdQuery } from "../../../redux/services/userApi";
+import AssignInternalUsersModal from "../../modals/AssignInternalUsersToProjectHierarchyModal";
 
 // =======================
 // TABLE COLUMNS
@@ -93,7 +94,7 @@ export default function InternalNodeUsersListConfig({
   });
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [isModalOpen, setModalOpen] = useState(false);
-
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   // Use the API query with search functionality
   const { data, isLoading, isError, refetch } =
     useGetUsersByInternalNodeIdQuery(
@@ -178,6 +179,7 @@ export default function InternalNodeUsersListConfig({
         }));
       }
     }
+    setCurrentProjectId(localStorage.getItem("current_project_id") || null);
   }, [data, isError, isLoading, roleFilter]);
 
   // Apply pagination - server-side handled by API, client-side for role filter
@@ -202,12 +204,11 @@ export default function InternalNodeUsersListConfig({
       pageSize,
     }));
   };
-
   return (
     <PageLayout
       filters={filterFields}
       filterColumnsPerRow={1}
-      actions={actions}
+      actions={ currentProjectId ? actions : [] }
       title="Assigned Users"
       description={`Users assigned to ${internal_node_name}`}
     >
@@ -221,13 +222,13 @@ export default function InternalNodeUsersListConfig({
         isLoading={isLoading}
       />
 
-      {/* <AssignUserModal
+      <AssignInternalUsersModal
         project_id={projectId}
-        internal_node_id={internal_node_id}
-        internal_node_name={internal_node_name}
-        isOpen={isModalOpen}
-        onClose={() => setModalOpen(false)}
-      /> */}
+        parent_node_id={internal_node_id}
+        parent_node_name={internal_node_name}
+          isOpen={isModalOpen}
+          onClose={() => setModalOpen(false)}
+        />
     </PageLayout>
   );
 }
