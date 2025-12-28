@@ -3,7 +3,8 @@
 
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Input } from "../ui/cn/input";
+import Input from "../form/input/InputField";
+
 import { Label } from "../ui/cn/label";
 import { Button } from "../ui/cn/button";
 import {
@@ -20,6 +21,12 @@ import {
 import { Check, XIcon, ChevronDown } from "lucide-react";
 import { useGetRolesQuery } from "../../redux/services/roleApi";
 import { useGetProjectMetricsQuery } from "../../redux/services/projectMetricApi";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  createInternalUserSchema,
+  type CreateInternalUserFormData,
+} from "../../utils/validation/schemas";
 
 interface CreateInternalUserModalProps {
   user_type_id: string;
@@ -35,8 +42,8 @@ interface ProjectMetric {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  projects: any[];
-  users: any[];
+  projects: unknown[];
+  users: unknown[];
 }
 
 export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = ({
@@ -44,13 +51,6 @@ export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = (
   isOpen,
   onClose,
 }) => {
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
-  const [projectMetricsIds, setProjectMetricsIds] = useState<string[]>([]);
-  const [position, setPosition] = useState("");
-  const [isActive, setIsActive] = useState(true);
   const [selectAll, setSelectAll] = useState(false);
 
   const {
@@ -66,78 +66,91 @@ export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = (
 
   const [createUser, { isLoading }] = useCreateUserMutation();
 
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateInternalUserFormData>({
+    resolver: zodResolver(createInternalUserSchema),
+    reValidateMode: "onChange",
+    defaultValues: {
+      full_name: "",
+      email: "",
+      phone_number: "",
+      position: "",
+      role_ids: [],
+      project_metrics_ids: [],
+    },
+  });
+
+  const selectedRoles = watch("role_ids") || [];
+  const projectMetricsIds = watch("project_metrics_ids") || [];
+
   // Update selectAll state based on current selection
   useEffect(() => {
     if (metrics.length > 0) {
       setSelectAll(projectMetricsIds.length === metrics.length);
     }
-  }, [projectMetricsIds, metrics]);
+  }, [projectMetricsIds.length, metrics.length]);
 
   const handleMetricSelect = (metricId: string) => {
-    setProjectMetricsIds((prev) => {
-      if (prev.includes(metricId)) {
-        return prev.filter((id) => id !== metricId);
-      } else {
-        return [...prev, metricId];
-      }
+    const currentIds = projectMetricsIds || [];
+    const newIds = currentIds.includes(metricId)
+      ? currentIds.filter((id) => id !== metricId)
+      : [...currentIds, metricId];
+    setValue("project_metrics_ids", newIds, {
+      shouldValidate: true,
+      shouldDirty: true,
     });
   };
 
   const handleSelectAll = () => {
     if (selectAll) {
-      // Deselect all
-      setProjectMetricsIds([]);
+      setValue("project_metrics_ids", [], {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
       setSelectAll(false);
     } else {
-      // Select all
       const allMetricIds = metrics.map((metric) => metric.project_metric_id);
-      setProjectMetricsIds(allMetricIds);
       setSelectAll(true);
+      setValue("project_metrics_ids", allMetricIds, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     }
   };
 
-  const handleSubmit = async () => {
-    if (!fullName || !email || !user_type_id || !selectedRoles.length) {
-      toast.error("Please fill all required fields");
-      return;
-    }
-
-    if (projectMetricsIds.length === 0) {
-      toast.error(
-        "Please select at least one project metric for internal users"
-      );
-      return;
-    }
-
+  const onSubmit = async (data: CreateInternalUserFormData) => {
     const payload: CreateUserDto = {
-      full_name: fullName,
-      email,
-      phone_number: phoneNumber || undefined,
+      full_name: data.full_name,
+      email: data.email,
+      phone_number: data.phone_number || undefined,
       user_type_id: user_type_id,
-      role_ids: selectedRoles || [],
+      role_ids: data.role_ids || [],
       project_metrics_ids:
-        projectMetricsIds.length > 0 ? projectMetricsIds : undefined,
-      position: position || undefined,
+        data.project_metrics_ids && data.project_metrics_ids.length > 0
+          ? data.project_metrics_ids
+          : undefined,
+      position: data.position || undefined,
     };
 
     try {
       await createUser(payload).unwrap();
       toast.success("User created successfully!");
       handleClose();
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to create user");
+    } catch (error: unknown) {
+      const errorMessage = (error as { data?: { message?: string } })?.data?.message || "Failed to create user";
+      toast.error(errorMessage);
     }
   };
 
   const handleClose = () => {
-    setFullName("");
-    setEmail("");
-    setPhoneNumber("");
-    setPosition("");
-    setIsActive(true);
-    setProjectMetricsIds([]);
+    reset();
     setSelectAll(false);
-    setSelectedRoles([]);
     onClose();
   };
 
@@ -152,7 +165,10 @@ export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = (
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white p-6 rounded-2xl w-full max-w-[700px] shadow-2xl max-h-[90vh] overflow-y-auto">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="bg-white p-6 rounded-2xl w-full max-w-[700px] shadow-2xl max-h-[90vh] overflow-y-auto"
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-[#094C81]">Create User</h2>
@@ -173,34 +189,57 @@ export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = (
                 Full Name <span className="text-red-500">*</span>
               </Label>
               <Input
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                {...register("full_name")}
                 placeholder="John Doe"
-                className="w-full h-12 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
+                className={`w-full h-12 border px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none ${
+                  errors.full_name
+                    ? "border-red-300 focus:ring-red-500/20"
+                    : "border-gray-300"
+                }`}
               />
+              {errors.full_name && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.full_name.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="block text-sm text-[#094C81] font-medium mb-2">
                 Phone Number <span className="text-red-500">*</span>
               </Label>
               <Input
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                {...register("phone_number")}
                 placeholder="+251 9xxxxxxx"
-                className="w-full h-12 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
+                className={`w-full h-12 border px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none ${
+                  errors.phone_number
+                    ? "border-red-300 focus:ring-red-500/20"
+                    : "border-gray-300"
+                }`}
               />
+              {errors.phone_number && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.phone_number.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label className="block text-sm text-[#094C81] font-medium mb-2">
                 Email <span className="text-red-500">*</span>
               </Label>
               <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                {...register("email")}
                 placeholder="john@example.com"
-                className="w-full h-12 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
+                className={`w-full h-12 border px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none ${
+                  errors.email
+                    ? "border-red-300 focus:ring-red-500/20"
+                    : "border-gray-300"
+                }`}
               />
+              {errors.email && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
             {/* ROLE MULTI SELECT */}
 
@@ -224,7 +263,7 @@ export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = (
 
                       {selectedRoles.map((roleId) => {
                         const r = roles.find(
-                          (rr: any) => rr.role_id === roleId
+                          (rr: { role_id: string; name: string }) => rr.role_id === roleId
                         );
                         if (!r) return null;
 
@@ -240,9 +279,13 @@ export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = (
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedRoles((prev) =>
-                                  prev.filter((id) => id !== roleId)
+                                const newRoles = selectedRoles.filter(
+                                  (id) => id !== roleId
                                 );
+                                setValue("role_ids", newRoles, {
+                                  shouldValidate: true,
+                                  shouldDirty: true,
+                                });
                               }}
                               className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-[#094C81]/20 transition-colors"
                               aria-label={`Remove ${r.name}`}
@@ -264,20 +307,24 @@ export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = (
                 >
                   <div className="max-h-64 overflow-y-auto">
                     {roles
-                      .filter((r: any) => !selectedRoles.includes(r.role_id))
-                      .map((r: any) => (
+                      .filter((r: { role_id: string; name: string }) => !selectedRoles.includes(r.role_id))
+                      .map((r: { role_id: string; name: string }) => (
                         <button
                           key={r.role_id}
                           type="button"
                           onClick={() => {
-                            setSelectedRoles((prev) => [...prev, r.role_id]);
+                            const newRoles = [...selectedRoles, r.role_id];
+                            setValue("role_ids", newRoles, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            });
                           }}
                           className="w-full text-left px-3 py-2 text-sm text-[#094C81] hover:bg-[#094C81]/10 rounded-md cursor-pointer transition-colors"
                         >
                           <span className="block truncate">{r.name}</span>
                         </button>
                       ))}
-                    {roles.filter((r: any) => !selectedRoles.includes(r.role_id)).length === 0 && (
+                    {roles.filter((r: { role_id: string; name: string }) => !selectedRoles.includes(r.role_id)).length === 0 && (
                       <div className="px-3 py-2 text-sm text-gray-400 text-center">
                         All roles selected
                       </div>
@@ -285,6 +332,11 @@ export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = (
                   </div>
                 </PopoverContent>
               </Popover>
+              {errors.role_ids && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.role_ids.message}
+                </p>
+              )}
             </div>
           </div>
           {/* metrics panel */}
@@ -379,23 +431,28 @@ export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = (
                 )}
               </div>
             )}
+            {errors.project_metrics_ids && (
+              <p className="text-xs text-red-500 mt-2">
+                {errors.project_metrics_ids.message}
+              </p>
+            )}
           </div>
         </div>
 
         {/* Footer */}
         <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
-          <Button variant="outline" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose} type="button">
             Cancel
           </Button>
           <Button
-            onClick={handleSubmit}
-            disabled={isLoading}
+            type="submit"
+            disabled={isSubmitting || isLoading}
             className="min-w-24"
           >
             {isLoading ? "Creating..." : "Create"}
           </Button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };
