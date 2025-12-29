@@ -149,37 +149,6 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     if (e.target === e.currentTarget) handleClose();
   };
 
-  // Handle manual date input parsing
-  const parseDateInput = (inputValue: string): Date | null => {
-    if (!inputValue) return null;
-
-    // Try parsing MM/DD/YYYY format
-    const dateMatch = inputValue.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (dateMatch) {
-      const month = parseInt(dateMatch[1], 10) - 1; // Month is 0-indexed
-      const day = parseInt(dateMatch[2], 10);
-      const year = parseInt(dateMatch[3], 10);
-      const date = new Date(year, month, day);
-
-      // Validate the date
-      if (
-        date.getFullYear() === year &&
-        date.getMonth() === month &&
-        date.getDate() === day
-      ) {
-        return date;
-      }
-    }
-
-    // Try parsing as ISO date string
-    const isoDate = new Date(inputValue);
-    if (!isNaN(isoDate.getTime())) {
-      return isoDate;
-    }
-
-    return null;
-  };
-
   const CustomDateInput = React.forwardRef<HTMLInputElement, any>(
     ({ value, onClick, onChange, onBlur, error }, ref) => (
       <div className="relative w-full">

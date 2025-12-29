@@ -20,247 +20,733 @@ import {
 } from "../../select";
 import { Card } from "../../card";
 
-export const description = "An interactive area chart";
+export const description = "Maintenance support requests by project and status";
 
+/* =========================
+   DATA (3 PROJECTS - FULL YEAR 2024)
+   ========================= */
 const chartData = [
-  { date: "2024-04-01", desktop: 222, mobile: 150 },
-  { date: "2024-04-02", desktop: 97, mobile: 180 },
-  { date: "2024-04-03", desktop: 167, mobile: 120 },
-  { date: "2024-04-04", desktop: 242, mobile: 260 },
-  { date: "2024-04-05", desktop: 373, mobile: 290 },
-  { date: "2024-04-06", desktop: 301, mobile: 340 },
-  { date: "2024-04-07", desktop: 245, mobile: 180 },
-  { date: "2024-04-08", desktop: 409, mobile: 320 },
-  { date: "2024-04-09", desktop: 59, mobile: 110 },
-  { date: "2024-04-10", desktop: 261, mobile: 190 },
-  { date: "2024-04-11", desktop: 327, mobile: 350 },
-  { date: "2024-04-12", desktop: 292, mobile: 210 },
-  { date: "2024-04-13", desktop: 342, mobile: 380 },
-  { date: "2024-04-14", desktop: 137, mobile: 220 },
-  { date: "2024-04-15", desktop: 120, mobile: 170 },
-  { date: "2024-04-16", desktop: 138, mobile: 190 },
-  { date: "2024-04-17", desktop: 446, mobile: 360 },
-  { date: "2024-04-18", desktop: 364, mobile: 410 },
-  { date: "2024-04-19", desktop: 243, mobile: 180 },
-  { date: "2024-04-20", desktop: 89, mobile: 150 },
-  { date: "2024-04-21", desktop: 137, mobile: 200 },
-  { date: "2024-04-22", desktop: 224, mobile: 170 },
-  { date: "2024-04-23", desktop: 138, mobile: 230 },
-  { date: "2024-04-24", desktop: 387, mobile: 290 },
-  { date: "2024-04-25", desktop: 215, mobile: 250 },
-  { date: "2024-04-26", desktop: 75, mobile: 130 },
-  { date: "2024-04-27", desktop: 383, mobile: 420 },
-  { date: "2024-04-28", desktop: 122, mobile: 180 },
-  { date: "2024-04-29", desktop: 315, mobile: 240 },
-  { date: "2024-04-30", desktop: 454, mobile: 380 },
-  { date: "2024-05-01", desktop: 165, mobile: 220 },
-  { date: "2024-05-02", desktop: 293, mobile: 310 },
-  { date: "2024-05-03", desktop: 247, mobile: 190 },
-  { date: "2024-05-04", desktop: 385, mobile: 420 },
-  { date: "2024-05-05", desktop: 481, mobile: 390 },
-  { date: "2024-05-06", desktop: 498, mobile: 520 },
-  { date: "2024-05-07", desktop: 388, mobile: 300 },
-  { date: "2024-05-08", desktop: 149, mobile: 210 },
-  { date: "2024-05-09", desktop: 227, mobile: 180 },
-  { date: "2024-05-10", desktop: 293, mobile: 330 },
-  { date: "2024-05-11", desktop: 335, mobile: 270 },
-  { date: "2024-05-12", desktop: 197, mobile: 240 },
-  { date: "2024-05-13", desktop: 197, mobile: 160 },
-  { date: "2024-05-14", desktop: 448, mobile: 490 },
-  { date: "2024-05-15", desktop: 473, mobile: 380 },
-  { date: "2024-05-16", desktop: 338, mobile: 400 },
-  { date: "2024-05-17", desktop: 499, mobile: 420 },
-  { date: "2024-05-18", desktop: 315, mobile: 350 },
-  { date: "2024-05-19", desktop: 235, mobile: 180 },
-  { date: "2024-05-20", desktop: 177, mobile: 230 },
-  { date: "2024-05-21", desktop: 82, mobile: 140 },
-  { date: "2024-05-22", desktop: 81, mobile: 120 },
-  { date: "2024-05-23", desktop: 252, mobile: 290 },
-  { date: "2024-05-24", desktop: 294, mobile: 220 },
-  { date: "2024-05-25", desktop: 201, mobile: 250 },
-  { date: "2024-05-26", desktop: 213, mobile: 170 },
-  { date: "2024-05-27", desktop: 420, mobile: 460 },
-  { date: "2024-05-28", desktop: 233, mobile: 190 },
-  { date: "2024-05-29", desktop: 78, mobile: 130 },
-  { date: "2024-05-30", desktop: 340, mobile: 280 },
-  { date: "2024-05-31", desktop: 178, mobile: 230 },
-  { date: "2024-06-01", desktop: 178, mobile: 200 },
-  { date: "2024-06-02", desktop: 470, mobile: 410 },
-  { date: "2024-06-03", desktop: 103, mobile: 160 },
-  { date: "2024-06-04", desktop: 439, mobile: 380 },
-  { date: "2024-06-05", desktop: 88, mobile: 140 },
-  { date: "2024-06-06", desktop: 294, mobile: 250 },
-  { date: "2024-06-07", desktop: 323, mobile: 370 },
-  { date: "2024-06-08", desktop: 385, mobile: 320 },
-  { date: "2024-06-09", desktop: 438, mobile: 480 },
-  { date: "2024-06-10", desktop: 155, mobile: 200 },
-  { date: "2024-06-11", desktop: 92, mobile: 150 },
-  { date: "2024-06-12", desktop: 492, mobile: 420 },
-  { date: "2024-06-13", desktop: 81, mobile: 130 },
-  { date: "2024-06-14", desktop: 426, mobile: 380 },
-  { date: "2024-06-15", desktop: 307, mobile: 350 },
-  { date: "2024-06-16", desktop: 371, mobile: 310 },
-  { date: "2024-06-17", desktop: 475, mobile: 520 },
-  { date: "2024-06-18", desktop: 107, mobile: 170 },
-  { date: "2024-06-19", desktop: 341, mobile: 290 },
-  { date: "2024-06-20", desktop: 408, mobile: 450 },
-  { date: "2024-06-21", desktop: 169, mobile: 210 },
-  { date: "2024-06-22", desktop: 317, mobile: 270 },
-  { date: "2024-06-23", desktop: 480, mobile: 530 },
-  { date: "2024-06-24", desktop: 132, mobile: 180 },
-  { date: "2024-06-25", desktop: 141, mobile: 190 },
-  { date: "2024-06-26", desktop: 434, mobile: 380 },
-  { date: "2024-06-27", desktop: 448, mobile: 490 },
-  { date: "2024-06-28", desktop: 149, mobile: 200 },
-  { date: "2024-06-29", desktop: 103, mobile: 160 },
-  { date: "2024-06-30", desktop: 446, mobile: 400 },
+  // Project Alpha - January to December 2024
+  {
+    date: "2024-01-01",
+    project: "alpha",
+    pending: 15,
+    resolved: 25,
+    rejected: 4,
+  },
+  {
+    date: "2024-01-15",
+    project: "alpha",
+    pending: 18,
+    resolved: 30,
+    rejected: 3,
+  },
+  {
+    date: "2024-02-01",
+    project: "alpha",
+    pending: 22,
+    resolved: 28,
+    rejected: 6,
+  },
+  {
+    date: "2024-02-15",
+    project: "alpha",
+    pending: 20,
+    resolved: 32,
+    rejected: 5,
+  },
+  {
+    date: "2024-03-01",
+    project: "alpha",
+    pending: 25,
+    resolved: 35,
+    rejected: 7,
+  },
+  {
+    date: "2024-03-15",
+    project: "alpha",
+    pending: 28,
+    resolved: 40,
+    rejected: 8,
+  },
+  {
+    date: "2024-04-01",
+    project: "alpha",
+    pending: 30,
+    resolved: 42,
+    rejected: 10,
+  },
+  {
+    date: "2024-04-15",
+    project: "alpha",
+    pending: 32,
+    resolved: 45,
+    rejected: 9,
+  },
+  {
+    date: "2024-05-01",
+    project: "alpha",
+    pending: 35,
+    resolved: 50,
+    rejected: 12,
+  },
+  {
+    date: "2024-05-15",
+    project: "alpha",
+    pending: 38,
+    resolved: 52,
+    rejected: 11,
+  },
+  {
+    date: "2024-06-01",
+    project: "alpha",
+    pending: 40,
+    resolved: 55,
+    rejected: 13,
+  },
+  {
+    date: "2024-06-15",
+    project: "alpha",
+    pending: 42,
+    resolved: 58,
+    rejected: 14,
+  },
+  {
+    date: "2024-07-01",
+    project: "alpha",
+    pending: 45,
+    resolved: 60,
+    rejected: 15,
+  },
+  {
+    date: "2024-07-15",
+    project: "alpha",
+    pending: 48,
+    resolved: 62,
+    rejected: 16,
+  },
+  {
+    date: "2024-08-01",
+    project: "alpha",
+    pending: 50,
+    resolved: 65,
+    rejected: 18,
+  },
+  {
+    date: "2024-08-15",
+    project: "alpha",
+    pending: 52,
+    resolved: 68,
+    rejected: 17,
+  },
+  {
+    date: "2024-09-01",
+    project: "alpha",
+    pending: 55,
+    resolved: 70,
+    rejected: 20,
+  },
+  {
+    date: "2024-09-15",
+    project: "alpha",
+    pending: 58,
+    resolved: 72,
+    rejected: 19,
+  },
+  {
+    date: "2024-10-01",
+    project: "alpha",
+    pending: 60,
+    resolved: 75,
+    rejected: 22,
+  },
+  {
+    date: "2024-10-15",
+    project: "alpha",
+    pending: 62,
+    resolved: 78,
+    rejected: 21,
+  },
+  {
+    date: "2024-11-01",
+    project: "alpha",
+    pending: 65,
+    resolved: 80,
+    rejected: 24,
+  },
+  {
+    date: "2024-11-15",
+    project: "alpha",
+    pending: 68,
+    resolved: 82,
+    rejected: 23,
+  },
+  {
+    date: "2024-12-01",
+    project: "alpha",
+    pending: 70,
+    resolved: 85,
+    rejected: 25,
+  },
+  {
+    date: "2024-12-15",
+    project: "alpha",
+    pending: 72,
+    resolved: 88,
+    rejected: 26,
+  },
+
+  // Project Beta - January to December 2024
+  {
+    date: "2024-01-01",
+    project: "beta",
+    pending: 20,
+    resolved: 18,
+    rejected: 5,
+  },
+  {
+    date: "2024-01-15",
+    project: "beta",
+    pending: 22,
+    resolved: 20,
+    rejected: 6,
+  },
+  {
+    date: "2024-02-01",
+    project: "beta",
+    pending: 25,
+    resolved: 22,
+    rejected: 7,
+  },
+  {
+    date: "2024-02-15",
+    project: "beta",
+    pending: 28,
+    resolved: 25,
+    rejected: 8,
+  },
+  {
+    date: "2024-03-01",
+    project: "beta",
+    pending: 30,
+    resolved: 28,
+    rejected: 9,
+  },
+  {
+    date: "2024-03-15",
+    project: "beta",
+    pending: 32,
+    resolved: 30,
+    rejected: 10,
+  },
+  {
+    date: "2024-04-01",
+    project: "beta",
+    pending: 35,
+    resolved: 32,
+    rejected: 11,
+  },
+  {
+    date: "2024-04-15",
+    project: "beta",
+    pending: 38,
+    resolved: 35,
+    rejected: 12,
+  },
+  {
+    date: "2024-05-01",
+    project: "beta",
+    pending: 40,
+    resolved: 38,
+    rejected: 13,
+  },
+  {
+    date: "2024-05-15",
+    project: "beta",
+    pending: 42,
+    resolved: 40,
+    rejected: 14,
+  },
+  {
+    date: "2024-06-01",
+    project: "beta",
+    pending: 45,
+    resolved: 42,
+    rejected: 15,
+  },
+  {
+    date: "2024-06-15",
+    project: "beta",
+    pending: 48,
+    resolved: 45,
+    rejected: 16,
+  },
+  {
+    date: "2024-07-01",
+    project: "beta",
+    pending: 50,
+    resolved: 48,
+    rejected: 17,
+  },
+  {
+    date: "2024-07-15",
+    project: "beta",
+    pending: 52,
+    resolved: 50,
+    rejected: 18,
+  },
+  {
+    date: "2024-08-01",
+    project: "beta",
+    pending: 55,
+    resolved: 52,
+    rejected: 19,
+  },
+  {
+    date: "2024-08-15",
+    project: "beta",
+    pending: 58,
+    resolved: 55,
+    rejected: 20,
+  },
+  {
+    date: "2024-09-01",
+    project: "beta",
+    pending: 60,
+    resolved: 58,
+    rejected: 21,
+  },
+  {
+    date: "2024-09-15",
+    project: "beta",
+    pending: 62,
+    resolved: 60,
+    rejected: 22,
+  },
+  {
+    date: "2024-10-01",
+    project: "beta",
+    pending: 65,
+    resolved: 62,
+    rejected: 23,
+  },
+  {
+    date: "2024-10-15",
+    project: "beta",
+    pending: 68,
+    resolved: 65,
+    rejected: 24,
+  },
+  {
+    date: "2024-11-01",
+    project: "beta",
+    pending: 70,
+    resolved: 68,
+    rejected: 25,
+  },
+  {
+    date: "2024-11-15",
+    project: "beta",
+    pending: 72,
+    resolved: 70,
+    rejected: 26,
+  },
+  {
+    date: "2024-12-01",
+    project: "beta",
+    pending: 75,
+    resolved: 72,
+    rejected: 27,
+  },
+  {
+    date: "2024-12-15",
+    project: "beta",
+    pending: 78,
+    resolved: 75,
+    rejected: 28,
+  },
+
+  // Project Gamma - January to December 2024
+  {
+    date: "2024-01-01",
+    project: "gamma",
+    pending: 10,
+    resolved: 35,
+    rejected: 2,
+  },
+  {
+    date: "2024-01-15",
+    project: "gamma",
+    pending: 12,
+    resolved: 38,
+    rejected: 3,
+  },
+  {
+    date: "2024-02-01",
+    project: "gamma",
+    pending: 15,
+    resolved: 40,
+    rejected: 4,
+  },
+  {
+    date: "2024-02-15",
+    project: "gamma",
+    pending: 18,
+    resolved: 42,
+    rejected: 5,
+  },
+  {
+    date: "2024-03-01",
+    project: "gamma",
+    pending: 20,
+    resolved: 45,
+    rejected: 6,
+  },
+  {
+    date: "2024-03-15",
+    project: "gamma",
+    pending: 22,
+    resolved: 48,
+    rejected: 7,
+  },
+  {
+    date: "2024-04-01",
+    project: "gamma",
+    pending: 25,
+    resolved: 50,
+    rejected: 8,
+  },
+  {
+    date: "2024-04-15",
+    project: "gamma",
+    pending: 28,
+    resolved: 52,
+    rejected: 9,
+  },
+  {
+    date: "2024-05-01",
+    project: "gamma",
+    pending: 30,
+    resolved: 55,
+    rejected: 10,
+  },
+  {
+    date: "2024-05-15",
+    project: "gamma",
+    pending: 32,
+    resolved: 58,
+    rejected: 11,
+  },
+  {
+    date: "2024-06-01",
+    project: "gamma",
+    pending: 35,
+    resolved: 60,
+    rejected: 12,
+  },
+  {
+    date: "2024-06-15",
+    project: "gamma",
+    pending: 38,
+    resolved: 62,
+    rejected: 13,
+  },
+  {
+    date: "2024-07-01",
+    project: "gamma",
+    pending: 40,
+    resolved: 65,
+    rejected: 14,
+  },
+  {
+    date: "2024-07-15",
+    project: "gamma",
+    pending: 42,
+    resolved: 68,
+    rejected: 15,
+  },
+  {
+    date: "2024-08-01",
+    project: "gamma",
+    pending: 45,
+    resolved: 70,
+    rejected: 16,
+  },
+  {
+    date: "2024-08-15",
+    project: "gamma",
+    pending: 48,
+    resolved: 72,
+    rejected: 17,
+  },
+  {
+    date: "2024-09-01",
+    project: "gamma",
+    pending: 50,
+    resolved: 75,
+    rejected: 18,
+  },
+  {
+    date: "2024-09-15",
+    project: "gamma",
+    pending: 52,
+    resolved: 78,
+    rejected: 19,
+  },
+  {
+    date: "2024-10-01",
+    project: "gamma",
+    pending: 55,
+    resolved: 80,
+    rejected: 20,
+  },
+  {
+    date: "2024-10-15",
+    project: "gamma",
+    pending: 58,
+    resolved: 82,
+    rejected: 21,
+  },
+  {
+    date: "2024-11-01",
+    project: "gamma",
+    pending: 60,
+    resolved: 85,
+    rejected: 22,
+  },
+  {
+    date: "2024-11-15",
+    project: "gamma",
+    pending: 62,
+    resolved: 88,
+    rejected: 23,
+  },
+  {
+    date: "2024-12-01",
+    project: "gamma",
+    pending: 65,
+    resolved: 90,
+    rejected: 24,
+  },
+  {
+    date: "2024-12-15",
+    project: "gamma",
+    pending: 68,
+    resolved: 92,
+    rejected: 25,
+  },
 ];
 
+/* =========================
+   CHART CONFIG
+   ========================= */
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  desktop: {
-    label: "Desktop",
+  pending: {
+    label: "Pending",
     color: "hsl(var(--chart-1))",
   },
-  mobile: {
-    label: "Mobile",
+  resolved: {
+    label: "Resolved",
     color: "hsl(var(--chart-2))",
+  },
+  rejected: {
+    label: "Rejected",
+    color: "hsl(var(--chart-3))",
   },
 } satisfies ChartConfig;
 
+/* =========================
+   COMPONENT
+   ========================= */
 export function ChartAreaInteractive() {
-  const [timeRange, setTimeRange] = React.useState("90d");
+  const [project, setProject] = React.useState("alpha");
+  const [timeRange, setTimeRange] = React.useState("1y");
 
-  const filteredData = chartData.filter((item) => {
-    const date = new Date(item.date);
-    const referenceDate = new Date("2024-06-30");
-    let daysToSubtract = 90;
-    if (timeRange === "30d") {
+  const filteredData = React.useMemo(() => {
+    // First filter by project
+    let data = chartData.filter((item) => item.project === project);
+
+    // Then filter by time range
+    const referenceDate = new Date("2024-12-15");
+    let daysToSubtract = 365; // 1 year default
+
+    if (timeRange === "6m") {
+      daysToSubtract = 180;
+    } else if (timeRange === "3m") {
+      daysToSubtract = 90;
+    } else if (timeRange === "1m") {
       daysToSubtract = 30;
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7;
     }
+
     const startDate = new Date(referenceDate);
     startDate.setDate(startDate.getDate() - daysToSubtract);
-    return date >= startDate;
-  });
+
+    return data.filter((item) => {
+      const date = new Date(item.date);
+      return date >= startDate;
+    });
+  }, [project, timeRange]);
 
   return (
     <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
-      <div className="flex items-center gap-2   pb-4 mb-4 sm:flex-row">
+      {/* Header */}
+      <div className="flex items-center gap-2 pb-4 mb-4 sm:flex-row">
         <div className="grid flex-1 gap-1">
-          <h3 className="text-lg font-semibold">Area Chart - Interactive</h3>
+          <h3 className="text-lg font-semibold">
+            Maintenance Support Requests
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Showing total visitors for the last 3 months
+            Pending, resolved, and rejected requests by project
           </p>
         </div>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger
-            className="hidden w-[160px] rounded-lg sm:ml-auto sm:flex"
-            aria-label="Select a value"
-          >
-            <SelectValue placeholder="Last 3 months" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            <SelectItem value="90d" className="rounded-lg">
-              Last 3 months
-            </SelectItem>
-            <SelectItem value="30d" className="rounded-lg">
-              Last 30 days
-            </SelectItem>
-            <SelectItem value="7d" className="rounded-lg">
-              Last 7 days
-            </SelectItem>
-          </SelectContent>
-        </Select>
+
+        {/* Filters */}
+        <div className="flex gap-2">
+          {/* Project Filter */}
+          <Select value={project} onValueChange={setProject}>
+            <SelectTrigger
+              className="w-[140px] rounded-lg sm:flex"
+              aria-label="Select project"
+            >
+              <SelectValue placeholder="Select Project" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl bg-white">
+              <SelectItem value="alpha" className="rounded-lg">
+                Project Alpha
+              </SelectItem>
+              <SelectItem value="beta" className="rounded-lg">
+                Project Beta
+              </SelectItem>
+              <SelectItem value="gamma" className="rounded-lg">
+                Project Gamma
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Time Range Filter */}
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger
+              className="w-[120px] rounded-lg sm:flex"
+              aria-label="Select time range"
+            >
+              <SelectValue placeholder="Time Range" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl bg-white">
+              <SelectItem value="1m" className="rounded-lg">
+                Last Month
+              </SelectItem>
+              <SelectItem value="3m" className="rounded-lg">
+                Last 3 Months
+              </SelectItem>
+              <SelectItem value="6m" className="rounded-lg">
+                Last 6 Months
+              </SelectItem>
+              <SelectItem value="1y" className="rounded-lg">
+                Last Year
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      {/* Chart */}
       <div className="flex-1 flex items-center justify-center min-h-0">
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
           <AreaChart data={filteredData}>
             <defs>
-              <linearGradient
-                id="area-chart-01-fillDesktop"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
+              <linearGradient id="fill-pending" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-desktop)"
+                  stopColor="var(--color-pending)"
                   stopOpacity={0.8}
                 />
-                {/*  */}
                 <stop
                   offset="95%"
-                  stopColor="var(--color-desktop)"
+                  stopColor="var(--color-pending)"
                   stopOpacity={0.1}
                 />
               </linearGradient>
-              <linearGradient
-                id="area-chart-01-fillMobile"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
+
+              <linearGradient id="fill-resolved" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--color-mobile)"
+                  stopColor="var(--color-resolved)"
                   stopOpacity={0.8}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--color-mobile)"
+                  stopColor="var(--color-resolved)"
+                  stopOpacity={0.1}
+                />
+              </linearGradient>
+
+              <linearGradient id="fill-rejected" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="5%"
+                  stopColor="var(--color-rejected)"
+                  stopOpacity={0.8}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--color-rejected)"
                   stopOpacity={0.1}
                 />
               </linearGradient>
             </defs>
+
             <CartesianGrid vertical={false} />
+
             <XAxis
               dataKey="date"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value);
-                return date.toLocaleDateString("en-US", {
+              tickFormatter={(value) =>
+                new Date(value).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
-                });
-              }}
+                })
+              }
             />
+
             <ChartTooltip
               cursor={false}
               content={
                 <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
+                  labelFormatter={(value) =>
+                    new Date(value).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
-                    });
-                  }}
+                    })
+                  }
                   indicator="dot"
                 />
               }
             />
+
             <Area
-              dataKey="mobile"
+              dataKey="pending"
               type="natural"
-              fill="url(#area-chart-01-fillMobile)"
-              stroke="var(--color-mobile)"
+              fill="url(#fill-pending)"
+              stroke="var(--color-pending)"
               stackId="a"
             />
             <Area
-              dataKey="desktop"
+              dataKey="resolved"
               type="natural"
-              fill="url(#area-chart-01-fillDesktop)"
-              stroke="var(--color-desktop)"
+              fill="url(#fill-resolved)"
+              stroke="var(--color-resolved)"
               stackId="a"
             />
+            <Area
+              dataKey="rejected"
+              type="natural"
+              fill="url(#fill-rejected)"
+              stroke="var(--color-rejected)"
+              stackId="a"
+            />
+
             <ChartLegend
               content={(props) => (
                 <ChartLegendContent

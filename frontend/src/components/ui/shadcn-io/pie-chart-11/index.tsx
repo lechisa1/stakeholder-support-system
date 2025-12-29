@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Label, Pie, PieChart, Sector } from "recharts";
+import { Pie, PieChart, Label, Cell } from "recharts";
 
 import {
   ChartConfig,
@@ -19,102 +19,122 @@ import {
 } from "../../select";
 import { Card } from "../../card";
 
-export const description = "An interactive pie chart";
+export const description =
+  "Raised maintenance requests by status filtered by project";
 
-const desktopData = [
-  { month: "january", desktop: 186, fill: "var(--color-january)" },
-  { month: "february", desktop: 305, fill: "var(--color-february)" },
-  { month: "march", desktop: 237, fill: "var(--color-march)" },
-  { month: "april", desktop: 173, fill: "var(--color-april)" },
-  { month: "may", desktop: 209, fill: "var(--color-may)" },
-];
+/* =========================
+   DATA PER PROJECT
+   ========================= */
+const projectData = {
+  alpha: [
+    { status: "created", value: 24 },
+    { status: "inprogress", value: 18 },
+    { status: "resolved", value: 32 },
+    { status: "rejected", value: 6 },
+    { status: "reraised", value: 9 },
+    { status: "closed", value: 21 },
+  ],
+  beta: [
+    { status: "created", value: 18 },
+    { status: "inprogress", value: 22 },
+    { status: "resolved", value: 28 },
+    { status: "rejected", value: 4 },
+    { status: "reraised", value: 7 },
+    { status: "closed", value: 19 },
+  ],
+  gamma: [
+    { status: "created", value: 12 },
+    { status: "inprogress", value: 14 },
+    { status: "resolved", value: 36 },
+    { status: "rejected", value: 3 },
+    { status: "reraised", value: 5 },
+    { status: "closed", value: 27 },
+  ],
+};
 
+/* =========================
+   CHART CONFIG
+   ========================= */
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
+  value: {
+    label: "Requests",
   },
-  desktop: {
-    label: "Desktop",
-  },
-  mobile: {
-    label: "Mobile",
-  },
-  january: {
-    label: "January",
+  created: {
+    label: "Created",
     color: "hsl(var(--chart-1))",
   },
-  february: {
-    label: "February",
+  inprogress: {
+    label: "In Progress",
     color: "hsl(var(--chart-2))",
   },
-  march: {
-    label: "March",
+  resolved: {
+    label: "Resolved",
     color: "hsl(var(--chart-3))",
   },
-  april: {
-    label: "April",
+  rejected: {
+    label: "Rejected",
     color: "hsl(var(--chart-4))",
   },
-  may: {
-    label: "May",
+  reraised: {
+    label: "Re-Raised",
     color: "hsl(var(--chart-5))",
+  },
+  closed: {
+    label: "Closed",
+    color: "hsl(var(--chart-6))",
   },
 } satisfies ChartConfig;
 
+/* =========================
+   COMPONENT
+   ========================= */
 export function ChartPieInteractive() {
-  const id = "pie-interactive";
-  const [activeMonth, setActiveMonth] = React.useState(desktopData[0].month);
+  const id = "pie-project-status";
+  const [project, setProject] =
+    React.useState<keyof typeof projectData>("alpha");
 
-  const activeIndex = React.useMemo(
-    () => desktopData.findIndex((item) => item.month === activeMonth),
-    [activeMonth]
+  const data = projectData[project];
+
+  const totalRaised = React.useMemo(
+    () => data.reduce((sum, item) => sum + item.value, 0),
+    [data]
   );
-  const months = React.useMemo(() => desktopData.map((item) => item.month), []);
 
   return (
-    <Card data-chart={id} className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col space-y-4 p-6">
+    <Card
+      data-chart={id}
+      className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col space-y-4 p-6"
+    >
       <ChartStyle id={id} config={chartConfig} />
+
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="grid gap-1">
-          <h3 className="text-lg font-semibold">Pie Chart - Interactive</h3>
-          <p className="text-sm text-muted-foreground">January - June 2024</p>
+          <h3 className="text-lg font-semibold">
+            Maintenance Support Requests
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Raised requests by status
+          </p>
         </div>
-        <Select value={activeMonth} onValueChange={setActiveMonth}>
+
+        {/* Project Dropdown */}
+        <Select value={project} onValueChange={setProject}>
           <SelectTrigger
-            className="h-7 w-[130px] rounded-lg pl-2.5"
-            aria-label="Select a value"
+            className="h-7 w-[160px] rounded-lg pl-2.5"
+            aria-label="Select project"
           >
-            <SelectValue placeholder="Select month" />
+            <SelectValue placeholder="Select project" />
           </SelectTrigger>
-          <SelectContent align="end" className="rounded-xl">
-            {months.map((key) => {
-              const config = chartConfig[key as keyof typeof chartConfig];
-
-              if (!config) {
-                return null;
-              }
-
-              return (
-                <SelectItem
-                  key={key}
-                  value={key}
-                  className="rounded-lg [&_span]:flex"
-                >
-                  <div className="flex items-center gap-2 text-xs">
-                    <span
-                      className="flex h-3 w-3 shrink-0 rounded-xs"
-                      style={{
-                        backgroundColor: `var(--color-${key})`,
-                      }}
-                    />
-                    {config?.label}
-                  </div>
-                </SelectItem>
-              );
-            })}
+          <SelectContent align="end" className="rounded-xl bg-white">
+            <SelectItem value="alpha">Project Alpha</SelectItem>
+            <SelectItem value="beta">Project Beta</SelectItem>
+            <SelectItem value="gamma">Project Gamma</SelectItem>
           </SelectContent>
         </Select>
       </div>
+
+      {/* Chart + Status */}
       <div className="flex justify-center items-center space-x-2">
         <ChartContainer
           id={id}
@@ -127,12 +147,19 @@ export function ChartPieInteractive() {
               content={<ChartTooltipContent hideLabel />}
             />
             <Pie
-              data={desktopData}
-              dataKey="desktop"
-              nameKey="month"
+              data={data}
+              dataKey="value"
+              nameKey="status"
               innerRadius={60}
               strokeWidth={5}
             >
+              {data.map((entry) => {
+                const config =
+                  chartConfig[entry.status as keyof typeof chartConfig];
+
+                return <Cell key={entry.status} fill={config.color} />;
+              })}
+
               <Label
                 content={({ viewBox }) => {
                   if (viewBox && "cx" in viewBox && "cy" in viewBox) {
@@ -148,14 +175,14 @@ export function ChartPieInteractive() {
                           y={viewBox.cy}
                           className="fill-foreground text-3xl font-bold"
                         >
-                          {desktopData[activeIndex].desktop.toLocaleString()}
+                          {totalRaised}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 24}
                           className="fill-muted-foreground"
                         >
-                          Visitors
+                          Total Raised
                         </tspan>
                       </text>
                     );
@@ -166,25 +193,24 @@ export function ChartPieInteractive() {
           </PieChart>
         </ChartContainer>
 
+        {/* Status Legend */}
         <div className="mx-auto aspect-square w-full max-w-[300px] flex items-center">
           <div className="rounded-xl">
-            {months.map((key) => {
-              const config = chartConfig[key as keyof typeof chartConfig];
-
-              if (!config) {
-                return null;
-              }
+            {data.map((item) => {
+              const config =
+                chartConfig[item.status as keyof typeof chartConfig];
 
               return (
-                <div key={key} className="rounded-lg [&_span]:flex mt-4">
+                <div
+                  key={item.status}
+                  className="rounded-lg [&_span]:flex mt-4"
+                >
                   <div className="flex items-center gap-2 text-xs">
                     <span
                       className="flex h-3 w-3 shrink-0 rounded-xs"
-                      style={{
-                        backgroundColor: `var(--color-${key})`,
-                      }}
+                      style={{ backgroundColor: config.color }}
                     />
-                    {config?.label}
+                    {config.label}
                   </div>
                 </div>
               );

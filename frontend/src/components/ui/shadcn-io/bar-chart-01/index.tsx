@@ -58,11 +58,11 @@ const chartConfig = {
     label: "Page Views",
   },
   desktop: {
-    label: "Desktop",
+    label: "Internal Users",
     color: "hsl(var(--chart-1))",
   },
   mobile: {
-    label: "Mobile",
+    label: "External Users",
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;
@@ -84,9 +84,9 @@ export function ChartBarInteractive() {
     <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
       <div className="flex flex-col items-stretch border-b pb-4 mb-4 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1">
-          <h3 className="text-lg font-semibold">Bar Chart - Interactive</h3>
+          <h3 className="text-lg font-semibold">User Statistics - 2024</h3>
           <p className="text-sm text-muted-foreground">
-            Showing total visitors for the last 30 days
+            Monthly users by user types
           </p>
         </div>
         <Select
@@ -97,7 +97,7 @@ export function ChartBarInteractive() {
             <SelectValue placeholder="Select Chart" />
           </SelectTrigger>
 
-          <SelectContent className="rounded-xl">
+          <SelectContent className="rounded-xl bg-white">
             {Object.keys(chartConfig)
               .filter((key) => key !== "views") // Filter out 'views' from the select options
               .map((key) => {
