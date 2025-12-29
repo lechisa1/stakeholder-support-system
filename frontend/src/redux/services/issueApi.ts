@@ -13,6 +13,9 @@ export interface IssuesByMultiplePairsParams {
     project_id: string;
     hierarchy_node_id: string;
   }>;
+  search?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface IssueByTicketNumberParams {
@@ -74,6 +77,16 @@ export interface PaginatedResponse<T> {
   search_query?: string;
   count: number;
   total_count: number;
+}
+
+export interface MultiplePairsResponse<T> {
+  success: boolean;
+  message: string;
+  search_query?: string;
+  count: number;
+  total_count: number;
+  issues: T[];
+  meta?: PaginationMeta;
 }
 
 export interface AcceptIssueDto {
@@ -158,16 +171,43 @@ export const issueApi = baseApi.injectEndpoints({
       providesTags: ["Issue"],
     }),
     // NEW: Get issues by multiple pairs
+    // getIssuesByMultiplePairs: builder.query<
+    //   Issue[],
+    //   IssuesByMultiplePairsParams & { user_id: string }
+    // >({
+    //   query: ({ pairs, user_id }) => {
+    //     // Encode the pairs array as a URL parameter
+    //     const encodedPairs = encodeURIComponent(JSON.stringify(pairs));
+    //     return `issues/issues-by-pairs/${encodedPairs}/user/${user_id}`;
+    //   },
+    //   providesTags: ["Issue"],
+    // }),
+
     getIssuesByMultiplePairs: builder.query<
-      Issue[],
+      MultiplePairsResponse<Issue>,
       IssuesByMultiplePairsParams & { user_id: string }
     >({
-      query: ({ pairs, user_id }) => {
+      query: ({ pairs, user_id, search, page = 1, pageSize = 10 }) => {
         // Encode the pairs array as a URL parameter
         const encodedPairs = encodeURIComponent(JSON.stringify(pairs));
-        return `issues/issues-by-pairs/${encodedPairs}/user/${user_id}`;
+
+        // Build query string
+        const queryParams: Record<string, string> = {};
+        queryParams.page = page.toString();
+        queryParams.pageSize = pageSize.toString();
+
+        if (search) queryParams.search = search;
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/issues/issues-by-pairs/${encodedPairs}/user/${user_id}${queryString}`;
       },
-      providesTags: ["Issue"],
+      providesTags: (result, error, params) => [
+        {
+          type: "Issue",
+          id: `multiple-pairs-issues-${params.user_id}`,
+        },
+        "Issue",
+      ],
     }),
 
     // getIssuesByProjectIds: builder.query<Issue[], string[]>({

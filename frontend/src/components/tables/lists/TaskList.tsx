@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Plus, Eye, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -121,11 +121,37 @@ export default function TaskList() {
 
   // Use custom hook to fetch all issues
   const {
-    allIssues,
+    data: issuesData,
     isLoading: issuesLoading,
     isError,
     errors,
-  } = useMultipleIssuesQueries(projectHierarchyPairs, userId);
+  } = useMultipleIssuesQueries(
+    projectHierarchyPairs,
+    userId,
+    pageDetail.pageIndex + 1,
+    pageDetail.pageSize
+  );
+
+  const allIssues = useMemo(() => {
+    if (!issuesData) return [];
+
+    // Check if it's the paginated response (has data property)
+    if (issuesData.data && Array.isArray(issuesData.data)) {
+      return issuesData.data;
+    }
+
+    // Check if it's the non-paginated array
+    if (Array.isArray(issuesData)) {
+      return issuesData;
+    }
+
+    // Check if it has issues property (for escalated issues)
+    if (issuesData.issues && Array.isArray(issuesData.issues)) {
+      return issuesData.issues;
+    }
+
+    return [];
+  }, [issuesData]);
 
   console.log("allIssues: ", allIssues);
 
@@ -136,14 +162,29 @@ export default function TaskList() {
   //   );
   // }, [allIssues, statusFilter]);
 
+  useEffect(() => {
+    if (issuesData?.meta) {
+      setPageDetail((prev) => ({
+        ...prev,
+        pageCount: issuesData.meta.totalPages,
+      }));
+    }
+  }, [issuesData?.meta]);
+
   const filteredIssues = useMemo(() => {
-    const safeIssues = Array.isArray(allIssues?.issues)
-      ? allIssues?.issues
-      : [];
-    return safeIssues.filter(
-      (issue) => statusFilter === "all" || issue.status === statusFilter
-    );
+    return allIssues.filter((issue) => {
+      if (statusFilter === "all") return true;
+      return issue.status === statusFilter;
+    });
   }, [allIssues, statusFilter]);
+
+  const handlePagination = (index: number, size: number) => {
+    setPageDetail({
+      ...pageDetail,
+      pageIndex: index,
+      pageSize: size,
+    });
+  };
 
   const filterFields: FilterField[] = [
     {
@@ -156,8 +197,11 @@ export default function TaskList() {
         { label: "Closed", value: "closed" },
       ],
       value: statusFilter,
-      onChange: (value: string | string[]) =>
-        setStatusFilter(Array.isArray(value) ? value[0] : value),
+      onChange: (value: string | string[]) => {
+        const newStatus = Array.isArray(value) ? value[0] : value;
+        setStatusFilter(newStatus);
+        setPageDetail({ ...pageDetail, pageIndex: 0 });
+      },
     },
   ];
 
@@ -202,12 +246,11 @@ export default function TaskList() {
       <DataTable
         columns={TaskTableColumns}
         data={filteredIssues}
-        handlePagination={(index, size) =>
-          setPageDetail({ ...pageDetail, pageIndex: index, pageSize: size })
-        }
+        handlePagination={handlePagination}
         tablePageSize={pageDetail.pageSize}
         totalPageCount={pageDetail.pageCount}
         currentIndex={pageDetail.pageIndex}
+        isLoading={issuesLoading}
       />
     </PageLayout>
   );
