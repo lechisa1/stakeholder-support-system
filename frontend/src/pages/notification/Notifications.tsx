@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Bell, AlertCircle, User, Shield } from "lucide-react";
 import clsx from "clsx";
 import { formatDistanceToNow } from "date-fns";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   useGetNotificationsByUserIdQuery,
   useMarkAllNotificationsAsReadMutation,
@@ -189,12 +189,13 @@ const Notifications: React.FC = () => {
                 {n.issue?.ticket_number ? (
                   <>
                     {n.message.split(n.issue.ticket_number)[0]}
-                    <span
+                    <Link
+                      to={`/task/${n.issue.issue_id}`}
                       className="text-[#073954] font-medium hover:underline"
                       title="View issue"
                     >
                       {n.issue.ticket_number}
-                    </span>
+                    </Link>
                     {n.message.split(n.issue.ticket_number)[1]}
                   </>
                 ) : (

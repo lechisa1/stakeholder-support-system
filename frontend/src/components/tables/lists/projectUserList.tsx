@@ -8,56 +8,7 @@ import { PageLayout } from "../../common/PageLayout";
 import { DataTable } from "../../common/CommonTable";
 import { ActionButton, FilterField } from "../../../types/layout";
 import { useGetUsersAssignedToProjectQuery } from "../../../redux/services/userApi";
-
-// ------------------- Table Columns -------------------
-const ProjectUserTableColumns = () => [
-  {
-    accessorKey: "user.full_name",
-    header: "Full Name",
-    cell: ({ row }: any) => (
-      <div className="font-medium text-blue-600">
-        {row.original.user?.full_name || "N/A"}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "user.email",
-    header: "Email",
-    cell: ({ row }: any) => <div>{row.original.user?.email || "N/A"}</div>,
-  },
-  {
-    accessorKey: "role.name",
-    header: "Role",
-    cell: ({ row }: any) => (
-      <div className="font-medium text-gray-700">
-        {row.original.role?.name || "N/A"}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "hierarchyNode.name",
-    header: "Assigned Structure",
-    cell: ({ row }: any) => (
-      <div>{row.original.hierarchyNode?.name || "N/A"}</div>
-    ),
-  },
-  {
-    accessorKey: "is_active",
-    header: "Status",
-    cell: ({ row }: any) => {
-      const isActive = row.getValue("is_active");
-      return (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-          }`}
-        >
-          {isActive ? "Active" : "Inactive"}
-        </span>
-      );
-    },
-  },
-];
+import { Button } from "../../ui/button";
 
 interface ProjectUserListProps {
   project_id: string;
@@ -84,7 +35,69 @@ export default function ProjectUserList({
       skip: !project_id,
     }
   );
-
+  // const [unassignUser] = useUnassignUserFromProjectMutation();
+  // ------------------- Table Columns -------------------
+  const ProjectUserTableColumns = () => [
+    {
+      accessorKey: "user.full_name",
+      header: "Full Name",
+      cell: ({ row }: any) => (
+        <div className="font-medium text-blue-600">
+          {row.original.user?.full_name || "N/A"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "user.email",
+      header: "Email",
+      cell: ({ row }: any) => <div>{row.original.user?.email || "N/A"}</div>,
+    },
+    {
+      accessorKey: "role.name",
+      header: "Role",
+      cell: ({ row }: any) => (
+        <div className="font-medium text-gray-700">
+          {row.original.role?.name || "N/A"}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "hierarchyNode.name",
+      header: "Assigned Structure",
+      cell: ({ row }: any) => (
+        <div>{row.original.hierarchyNode?.name || "N/A"}</div>
+      ),
+    },
+    {
+      accessorKey: "is_active",
+      header: "Status",
+      cell: ({ row }: any) => {
+        const isActive = row.getValue("is_active");
+        return (
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              isActive
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            {isActive ? "Active" : "Inactive"}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "action",
+      header: "Action",
+      cell: ({ row }: any) => (
+        <div>
+          <Button className="border border-red-500 text-red-500 hover:bg-red-500 hover:text-white">
+            Unassign
+          </Button>
+        </div>
+      ),
+    },
+  ];
   const filterFields: FilterField[] = [
     {
       key: "status",
