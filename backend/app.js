@@ -37,6 +37,8 @@ const hierarchyNodeRoute = require("./routers/hierarchyNodeRoutes");
 const internalNodeRoute = require("./routers/internalNodeRoute");
 const hierarchyNodeOrganizationRoute = require("./routers/hierarchyNodeOrganizationRoutes");
 
+const notificationRoutes = require("./routers/notificationRoutes");
+
 const changePasswordRoutes = require("./routers/passwordChangeRoutes");
 
 const issueFileAttachmentRoutes = require("./routers/issueAttachmentRoutes");
@@ -170,6 +172,9 @@ app.use("/api/issue-re-raises", issueReRaiseRoutes);
 app.use("/api/issue-rejects", issueRejectRoutes);
 app.use("/api/internal-nodes", internalNodeRoute);
 // /api/internal-nodes
+
+// notifications
+app.use("/api/notifications", notificationRoutes);
 
 app.use("/api/change-password", changePasswordRoutes);
 

@@ -32,6 +32,7 @@ const {
 const { Op } = require("sequelize");
 const { v4: uuidv4 } = require("uuid");
 const crypto = require("crypto");
+const NotificationService = require("../../services/notificationService");
 
 // ================================
 // CREATE ISSUE (with optional attachments)
@@ -126,6 +127,37 @@ const createIssue = async (req, res) => {
         attachment_id,
       }));
       await IssueAttachment.bulkCreate(links, { transaction: t });
+    }
+
+    // ================================
+    // SEND NOTIFICATION TO PARENT HIERARCHY
+    // ================================
+    try {
+      if (project_id && reported_by) {
+        // Use the NotificationService
+        await NotificationService.sendToImmediateParentHierarchy(
+          {
+            sender_id: reported_by,
+            project_id: project_id,
+            issue_id: issue.issue_id,
+            hierarchy_node_id: hierarchy_node_id,
+            title: `New Issue Created: ${title}`,
+            message: `A new issue "${title}" (${ticket_number}) has been created in your child hierarchy. Priority: ${
+              priority_id ? "High" : "Normal"
+            }`,
+          },
+          t // Pass the transaction
+        );
+        // Note: We don't need to do anything with the result here
+        // It will return success even if no parents found
+      }
+    } catch (notificationError) {
+      // Log notification error but don't fail the issue creation
+      console.warn(
+        "Failed to send notification for new issue:",
+        notificationError.message
+      );
+      // Continue with issue creation even if notification fails
     }
 
     await t.commit();
@@ -2389,6 +2421,24 @@ const confirmIssueResolved = async (req, res) => {
       },
       { transaction: t }
     );
+
+    // ==================================
+    // NOTIFY SOLVER(S) ABOUT CONFIRMATION/REJECTION
+    // ==================================
+    try {
+      await NotificationService.notifySolverOnConfirmation(
+        {
+          issue_id,
+          creator_id: user_id,
+          is_confirmed: true,
+          rejection_reason: null,
+        },
+        t // Pass the existing transaction
+      );
+    } catch (notificationError) {
+      console.warn("Notification to solver failed:", notificationError.message);
+      // Don't fail the entire operation if notification fails
+    }
 
     await t.commit();
     return res.json({
