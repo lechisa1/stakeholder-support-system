@@ -9,6 +9,7 @@ export interface Notification {
   type: 
     | "ISSUE_CREATED"
     | "ISSUE_ASSIGNED"
+    | "ISSUE_UNASSIGNED"
     | "ISSUE_RESOLVED"
     | "ISSUE_CONFIRMED"
     | "ISSUE_REJECTED"
@@ -209,6 +210,7 @@ export const notificationApi = baseApi.injectEndpoints({
       query: () => ({
         url: `/notifications/mark-all-read`,
         method: "POST",
+        body: {},
       }),
       transformResponse: (response: { data: { updatedCount: number }; success: boolean; message: string }) => response.data,
       invalidatesTags: ["Notification"],

@@ -18,6 +18,10 @@ const {
 } = require("../models");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { v4: uuidv4, validate: isUuid } = require("uuid");
+const { Op } = require("sequelize");
+const { generateRandomPassword } = require("../utils/password");
+const { sendEmail } = require("../utils/sendEmail");
 
 const login = async (req, res) => {
   try {
@@ -593,4 +597,79 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
-module.exports = { login, logout, getCurrentUser };
+const updateUserPassword = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const { current_password, new_password } = req.body;
+
+    if (!current_password || !new_password) {
+      return res.status(400).json({
+        message: "Current password and new password are required",
+      });
+    }
+
+    const user = await User.findOne({
+      where: { user_id: decoded.user_id },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(current_password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+
+    // Update password and first login flag
+    await User.update(
+      {
+        password: hashedPassword,
+        is_first_logged_in: false,
+        password_changed_at: new Date(),
+        updated_at: new Date(),
+      },
+      {
+        where: { user_id: user.user_id },
+      }
+    );
+
+    // Send email notification
+    await sendEmail(
+      user.email,
+      `Password Updated - ${process.env.APP_NAME}`,
+      `
+      Dear ${user.full_name},
+      Your password has been updated successfully.
+      Email: ${user.email}
+      If you did not perform this action, please contact support immediately.
+      Regards,
+      ${process.env.APP_NAME} Team
+      `
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { login, logout, getCurrentUser, updateUserPassword };

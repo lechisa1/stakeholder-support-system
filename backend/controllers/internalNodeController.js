@@ -273,18 +273,18 @@ const getUserInternalNodesByProject = async (req, res) => {
     // Get authenticated user ID from req.user (set by auth middleware)
     const user_id = req.user.user_id;
 
-    console.log("Fetching assignments for project_id:", project_id);
-    console.log("Fetching assignments for user_id:", user_id);
+    // console.log("Fetching assignments for project_id:", project_id);
+    // console.log("Fetching assignments for user_id:", user_id);
 
     // DEBUG: First check if there are any matching records
     const count = await InternalProjectUserRole.count({
       where: { project_id, user_id },
     });
-    console.log("Direct count of matching records:", count);
+    // console.log("Direct count of matching records:", count);
 
     // If no records found, return empty array immediately
     if (count === 0) {
-      console.log("No assignments found for this user in this project");
+      // console.log("No assignments found for this user in this project");
       return res.status(200).json({
         success: true,
         count: 0,

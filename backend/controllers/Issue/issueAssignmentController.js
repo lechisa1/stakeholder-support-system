@@ -9,6 +9,7 @@ const {
   sequelize,
 } = require("../../models");
 const { v4: uuidv4 } = require("uuid");
+const NotificationService = require("../../services/notificationService");
 
 // ------------------------------------------------------
 //  ASSIGN ISSUE
@@ -120,6 +121,19 @@ const assignIssue = async (req, res) => {
       { transaction: t }
     );
 
+    // 9. Send notification
+    await NotificationService.notifyUsersOnAssignmentChange(
+      {
+        issue_id,
+        assignee_id,
+        assigned_by,
+        action_type: "ASSIGNED",
+        remarks,
+        assignment_id,
+      },
+      t
+    );
+
     // COMMIT transaction
     await t.commit();
 
@@ -227,6 +241,21 @@ const removeAssignment = async (req, res) => {
         created_at: new Date(),
       },
       { transaction: t }
+    );
+
+    console.log("Preparing to send notification for assignment removal");
+
+    // 8. Send notification
+    await NotificationService.notifyUsersOnAssignmentChange(
+      {
+        issue_id,
+        assignee_id,
+        assigned_by: assigner.user_id,
+        action_type: "UNASSIGNED",
+        reason,
+        assignment_id,
+      },
+      t
     );
 
     // COMMIT transaction
@@ -347,6 +376,20 @@ const removeAssignmentByAssigneeAndIssue = async (req, res) => {
         created_at: new Date(),
       },
       { transaction: t }
+    );
+
+    // 9. Send notification
+    await NotificationService.notifyUsersOnAssignmentChange(
+      {
+        issue_id,
+        assignee_id,
+        assigned_by: removed_by,
+        action_type: "UNASSIGNED",
+        reason:
+          reason ?? `Assignment removed by assignee ${removedByUser.full_name}`,
+        assignment_id,
+      },
+      t
     );
 
     // COMMIT transaction

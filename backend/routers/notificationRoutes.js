@@ -242,39 +242,6 @@ const { authenticateToken } = require("../middlewares/authMiddleware");
  */
 router.get("/stats", authenticateToken, controller.getNotificationStats);
 
-// ================================
-// GET ROUTES
-// ================================
-
-/**
- * @swagger
- * /api/notifications/{id}:
- *   get:
- *     summary: Get notification by ID
- *     tags: [Notifications]
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *           format: uuid
- *         required: true
- *     responses:
- *       200:
- *         description: Notification details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Notification'
- *       400:
- *         description: Validation error
- *       404:
- *         description: Notification not found
- *       500:
- *         description: Internal server error
- */
-router.get("/:id", controller.getNotificationById);
-
 /**
  * @swagger
  * /api/notifications/user/{user_id}:
@@ -325,6 +292,26 @@ router.get(
   controller.getNotificationsByUserId
 );
 
+/**
+ * @swagger
+ * /api/notifications/mark-all-read:
+ *   post:
+ *     summary: Mark all notifications as read for current user
+ *     tags: [Notifications]
+ *     responses:
+ *       200:
+ *         description: All notifications marked as read
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  "/mark-all-read",
+  authenticateToken,
+  controller.markAllNotificationsAsRead
+);
+
 // ================================
 // POST ROUTES
 // ================================
@@ -353,25 +340,10 @@ router.get(
  */
 router.post(
   "/mark-read",
+  authenticateToken,
   validateMarkAsRead,
   controller.markNotificationAsRead
 );
-
-/**
- * @swagger
- * /api/notifications/mark-all-read:
- *   post:
- *     summary: Mark all notifications as read for current user
- *     tags: [Notifications]
- *     responses:
- *       200:
- *         description: All notifications marked as read
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
-router.post("/mark-all-read", controller.markAllNotificationsAsRead);
 
 /**
  * @swagger
@@ -512,6 +484,39 @@ router.post(
   validateSendGeneralNotification,
   controller.sendGeneralNotification
 );
+
+// ================================
+// GET ROUTES
+// ================================
+
+/**
+ * @swagger
+ * /api/notifications/{id}:
+ *   get:
+ *     summary: Get notification by ID
+ *     tags: [Notifications]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Notification details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Notification'
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Notification not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/:id", controller.getNotificationById);
 
 // ================================
 // DELETE ROUTES

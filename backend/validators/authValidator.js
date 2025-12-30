@@ -1,6 +1,5 @@
 const Joi = require("joi");
 
-
 const loginSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.email": "Must be a valid email",
@@ -12,13 +11,24 @@ const loginSchema = Joi.object({
   }),
 });
 
-
 const logoutSchema = Joi.object({
   token: Joi.string().required().messages({
     "any.required": "Token is required for logout",
   }),
 });
 
+/*
+ Update Password Schema */
+const updatePasswordSchema = Joi.object({
+  current_password: Joi.string().min(6).required().messages({
+    "string.min": "Current password must be at least 6 characters long",
+    "any.required": "Current password is required",
+  }),
+  new_password: Joi.string().min(6).required().messages({
+    "string.min": "New password must be at least 6 characters long",
+    "any.required": "New password is required",
+  }),
+});
 
 exports.validateLogin = (req, res, next) => {
   const { error } = loginSchema.validate(req.body);
@@ -30,9 +40,18 @@ exports.validateLogin = (req, res, next) => {
   next();
 };
 
-
 exports.validateLogout = (req, res, next) => {
   const { error } = logoutSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      errors: error.details.map((err) => err.message),
+    });
+  }
+  next();
+};
+
+exports.validateUpdatePassword = (req, res, next) => {
+  const { error } = updatePasswordSchema.validate(req.body);
   if (error) {
     return res.status(400).json({
       errors: error.details.map((err) => err.message),

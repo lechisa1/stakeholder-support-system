@@ -21,7 +21,6 @@ import {
 } from "../../redux/services/notificationApi";
 import { CATEGORY_MAP } from "../../pages/notification/Notifications";
 
-
 export const getNotificationIcon = (type: Notification["type"]) => {
   switch (true) {
     // ISSUE notifications
@@ -100,10 +99,13 @@ const NotificationItem = ({
           <span className="font-medium text-gray-800 truncate dark:text-white/90">
             {notification.title}
           </span>
-          <X onClick={(e) => {
-            e.stopPropagation();
-            onXClick(notification);
-          }} className="hidden group-hover:flex hover:cursor-pointer hover:text-red-500 text-[#073954] w-5 h-5 absolute top-2 right-2" />
+          <X
+            onClick={(e) => {
+              e.stopPropagation();
+              onXClick(notification);
+            }}
+            className="hidden group-hover:flex hover:cursor-pointer hover:text-red-500 text-[#073954] w-5 h-5 absolute top-2 right-2"
+          />
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
           {truncateText(notification.message, 40)}
@@ -127,13 +129,9 @@ export default function NotificationDropdown() {
 
   const { data: notificationsResponse, refetch } =
     useGetNotificationsByUserIdQuery(
-      { userId: userId!, params: { page: 1, pageSize: 10 } },
+      { userId: userId!, params: { is_read: "false" } },
       { skip: !userId, refetchOnMountOrArgChange: true }
     );
-
-  const { data: stats } = useGetNotificationStatsQuery(undefined, {
-    skip: !userId,
-  });
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
@@ -150,21 +148,12 @@ export default function NotificationDropdown() {
 
   // Optimistic mark as read
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.is_read) {
-      setLocalNotifications((prev) =>
-        prev.map((n) =>
-          n.notification_id === notification.notification_id
-            ? { ...n, is_read: true }
-            : n
-        )
-      );
-      try {
-        await markAsRead({
-          notification_id: notification.notification_id,
-        }).unwrap();
-      } catch (err) {
-        console.error(err);
-      }
+    try {
+      await markAsRead({
+        notification_id: notification.notification_id,
+      }).unwrap();
+    } catch (err) {
+      console.error(err);
     }
     closeDropdown();
     // Optional: navigation logic
@@ -180,18 +169,17 @@ export default function NotificationDropdown() {
   };
   // mark a single notification as read
   const handleMarkAsRead = async (notification: Notification) => {
-    if (!notification.is_read) {
-      setLocalNotifications((prev) => prev.map((n) => n.notification_id === notification.notification_id ? { ...n, is_read: true } : n));
-      try {
-        await markAsRead({ notification_id: notification.notification_id }).unwrap();
-      } catch (err) {
-        console.error(err);
-      }
+    try {
+      await markAsRead({
+        notification_id: notification.notification_id,
+      }).unwrap();
+    } catch (err) {
+      console.error(err);
     }
   };
 
   const unreadCount = useMemo(
-    () => localNotifications.filter((n) => !n.is_read).length,
+    () => localNotifications.length,
     [localNotifications]
   );
 

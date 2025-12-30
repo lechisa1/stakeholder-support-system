@@ -11,6 +11,7 @@ const {
 } = require("../../models");
 
 const { v4: uuidv4 } = require("uuid");
+const NotificationService = require("../../services/notificationService");
 
 // ------------------------------------------------------
 //  RE-RAISE ISSUE
@@ -121,6 +122,26 @@ const reRaiseIssue = async (req, res) => {
       },
       { transaction: t }
     );
+
+    // ==================================
+    // 9. NOTIFY ISSUE RESOLVER AT REOPEND
+    // ==================================
+    try {
+      await NotificationService.notifySolverOnReraise(
+        {
+          issue_id,
+          creator_id: re_raised_by,
+          raise_reason: reason,
+        },
+        t // Pass the existing transaction
+      );
+    } catch (notificationError) {
+      console.warn(
+        "Notification failed but continuing with re raise:",
+        notificationError.message
+      );
+      // Don't fail the entire operation if notification fails
+    }
 
     // COMMIT
     await t.commit();

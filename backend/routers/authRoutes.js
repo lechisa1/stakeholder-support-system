@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
-const { validateLogin } = require("../validators/authValidator");
+const { validateLogin, validateUpdatePassword } = require("../validators/authValidator");
 const { authenticateToken } = require("../middlewares/authMiddleware");
 /**
  * @swagger
@@ -67,5 +67,40 @@ router.post("/logout", authController.logout);
  *         description: Unauthorized, invalid or missing token
  */
 router.get("/me", authenticateToken, authController.getCurrentUser);
+
+/**
+ * @swagger
+ * /api/auth/update-password:
+ *   put:
+ *     summary: Update user password
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - current_password
+ *               - new_password
+ *             properties:
+ *               current_password:
+ *                 type: string
+ *               new_password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.put(
+  "/update-password",
+  authenticateToken,
+  validateUpdatePassword,
+  authController.updateUserPassword
+);
 
 module.exports = router;

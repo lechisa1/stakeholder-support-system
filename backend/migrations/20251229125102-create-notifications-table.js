@@ -15,6 +15,7 @@ module.exports = {
           // Issue-related
           "ISSUE_CREATED",
           "ISSUE_ASSIGNED",
+          "ISSUE_UNASSIGNED",
           "ISSUE_RESOLVED",
           "ISSUE_CONFIRMED",
           "ISSUE_REJECTED",

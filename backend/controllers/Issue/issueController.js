@@ -134,20 +134,42 @@ const createIssue = async (req, res) => {
     // ================================
     try {
       if (project_id && reported_by) {
-        // Use the NotificationService
-        await NotificationService.sendToImmediateParentHierarchy(
-          {
-            sender_id: reported_by,
-            project_id: project_id,
-            issue_id: issue.issue_id,
-            hierarchy_node_id: hierarchy_node_id,
-            title: `New Issue Created: ${title}`,
-            message: `A new issue "${title}" (${ticket_number}) has been created in your child hierarchy. Priority: ${
-              priority_id ? "High" : "Normal"
-            }`,
-          },
-          t // Pass the transaction
+        const senderHierarchyNode = await HierarchyNode.findByPk(
+          hierarchy_node_id
         );
+        if (!senderHierarchyNode) throw new Error("Invalid hierarchy node");
+        if (
+          senderHierarchyNode.parent_id == null ||
+          senderHierarchyNode.parent_id == undefined
+        ) {
+          await NotificationService.sendToInternalAssignedRootUsers(
+            {
+              sender_id: reported_by,
+              project_id: project_id,
+              issue_id: issue.issue_id,
+              hierarchy_node_id: hierarchy_node_id,
+              title: `New Issue Created with No: ${ticket_number}`,
+              message: `A new issue (${ticket_number}) has been created.`,
+              type: "ISSUE_CREATED",
+            },
+            t // Pass the transaction
+          );
+        } else {
+          // Use the NotificationService
+          await NotificationService.sendToImmediateParentHierarchy(
+            {
+              sender_id: reported_by,
+              project_id: project_id,
+              issue_id: issue.issue_id,
+              hierarchy_node_id: hierarchy_node_id,
+              title: `New Issue Created with No: ${ticket_number}`,
+              message: `A new issue (${ticket_number}) has been created in your child hierarchy. Priority: ${
+                priority_id ? "High" : "Normal"
+              }`,
+            },
+            t // Pass the transaction
+          );
+        }
         // Note: We don't need to do anything with the result here
         // It will return success even if no parents found
       }

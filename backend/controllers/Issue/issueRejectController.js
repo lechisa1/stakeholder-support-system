@@ -11,6 +11,7 @@ const {
 } = require("../../models");
 
 const { v4: uuidv4 } = require("uuid");
+const NotificationService = require("../../services/notificationService");
 
 // ------------------------------------------------------
 //  REJECT ISSUE
@@ -118,6 +119,24 @@ const rejectIssue = async (req, res) => {
       },
       { transaction: t }
     );
+
+    // ==================================
+    // NOTIFY SOLVER(S) ABOUT CONFIRMATION/REJECTION
+    // ==================================
+    try {
+      await NotificationService.notifySolverOnConfirmation(
+        {
+          issue_id,
+          creator_id: rejected_by,
+          is_confirmed: false,
+          rejection_reason: reason,
+        },
+        t // Pass the existing transaction
+      );
+    } catch (notificationError) {
+      console.warn("Notification to solver failed:", notificationError.message);
+      // Don't fail the entire operation if notification fails
+    }
 
     // COMMIT
     await t.commit();

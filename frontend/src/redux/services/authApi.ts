@@ -2,6 +2,11 @@
 import { baseApi } from "../baseApi";
 import type { AuthResponse, LoginCredentials } from "../../types/auth";
 
+type UpdatePasswordPayload = {
+  current_password: string;
+  new_password: string;
+};
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, LoginCredentials>({
@@ -51,6 +56,19 @@ export const authApi = baseApi.injectEndpoints({
         method: "GET",
       }),
       providesTags: ["User"],
+    }),
+
+    /* Update Password */
+    updatePassword: builder.mutation<
+      { success: boolean; message: string },
+      UpdatePasswordPayload
+    >({
+      query: (payload) => ({
+        url: "/auth/update-password",
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["User"],
     }),
   }),
 });

@@ -12,6 +12,7 @@ const {
 } = require("../../models");
 
 const { v4: uuidv4 } = require("uuid");
+const NotificationService = require("../../services/notificationService");
 
 // ------------------------------------------------------
 //  ESCALATE ISSUE
@@ -117,6 +118,55 @@ const escalateIssue = async (req, res) => {
     // const oldStatus = issue.status;
     issue.status = "escalated"; // <--- status update
     await issue.save({ transaction: t });
+
+    // ================================
+    // SEND NOTIFICATION TO PARENT HIERARCHY
+    // ================================
+    try {
+      if (issue.project_id && escalated_by && from_tier) {
+        if (to_tier !== null && to_tier !== undefined) {
+          console.log("Sending escalation notification to parent hierarchy...");
+          // Use the NotificationService
+          await NotificationService.sendToImmediateParentHierarchy(
+            {
+              sender_id: escalated_by,
+              project_id: issue.project_id,
+              issue_id: issue.issue_id,
+              hierarchy_node_id: from_tier,
+              title: `Issue Escalated: ${issue.title}`,
+              message: `Issue with" (${issue.ticket_number}) has been escalated  in your child hierarchy. Please review and take necessary action.`,
+              type: "ISSUE_ESCALATED",
+            },
+            t // Pass the transaction
+          );
+        } else {
+          console.log(
+            "Sending escalation notification to Internal Root Users..."
+          );
+          await NotificationService.sendToInternalAssignedRootUsers(
+            {
+              sender_id: escalated_by,
+              project_id: issue.project_id,
+              issue_id: issue.issue_id,
+              hierarchy_node_id: from_tier,
+              title: `Issue Escalated: ${issue.title}`,
+              message: `Issue with" (${issue.ticket_number}) has been escalated  in your child hierarchy. Please review and take necessary action.`,
+              type: "ISSUE_ESCALATED",
+            },
+            t // Pass the transaction
+          );
+        }
+        // Note: We don't need to do anything with the result here
+        // It will return success even if no parents found
+      }
+    } catch (notificationError) {
+      // Log notification error but don't fail the issue creation
+      console.warn(
+        "Failed to send notification for issue escalation:",
+        notificationError.message
+      );
+      // Continue with issue creation even if notification fails
+    }
 
     // COMMIT ALL
     await t.commit();
