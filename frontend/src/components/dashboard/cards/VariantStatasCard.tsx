@@ -19,212 +19,325 @@ import { ChartContainer, ChartConfig } from "../../ui/chart";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { Badge } from "../../ui/badge";
 import React from "react";
+import { useGetDashboardStatsQuery } from "../../../redux/services/dashboardApi";
+import { exportToCSV } from "../../../utils/dashboardHelper";
+import { Button } from "../../ui/cn/button";
 
-type StatCard = {
-  id: string;
-  title: string;
-  value: number;
-  percent: number;
-  change: string;
-  color: string;
-  status: string;
+
+// Helper functions
+export const normalizeStatus = (status: string) => {
+  if (status === "resolved" || status === "closed") return "resolved";
+  if (status === "rejected") return "rejected";
+  return "pending";
 };
 
-const woredaStatistics: StatCard[] = [
-  {
-    id: "1",
-    title: "Resloved Requests",
-    value: 4236,
-    percent: 68,
-    change: "+12%",
-    color: "hsl(var(--chart-1))",
-    status: "positive",
-  },
-  {
-    id: "2",
-    title: "Pending Requests",
-    value: 2845,
-    percent: 72,
-    change: "+8%",
-    color: "hsl(var(--chart-2))",
-    status: "positive",
-  },
-  {
-    id: "3",
-    title: "Rejected Requests",
-    value: 876,
-    percent: 38,
-    change: "-2%",
-    color: "hsl(var(--chart-3))",
-    status: "negative",
-  },
-];
+export const isWithinRange = (date: string, range: "90d" | "30d" | "7d") => {
+  const now = new Date();
+  const created = new Date(date);
 
-const cityStatistics: StatCard[] = [
-  {
-    id: "1",
-    title: "Resloved Requests",
-    value: 8924,
-    percent: 82,
-    change: "+18%",
-    color: "hsl(var(--chart-1))",
-    status: "positive",
-  },
-  {
-    id: "2",
-    title: "Pending Requests",
-    value: 5347,
-    percent: 78,
-    change: "+12%",
-    color: "hsl(var(--chart-2))",
-    status: "positive",
-  },
-  {
-    id: "3",
-    title: "Rejected Requests",
-    value: 2156,
-    percent: 52,
-    change: "+5%",
-    color: "hsl(var(--chart-3))",
-    status: "negative",
-  },
-];
+  const diffDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
 
-const subcityStatistics: StatCard[] = [
-  {
-    id: "1",
-    title: "Resloved Requests",
-    value: 3268,
-    percent: 61,
-    change: "+9%",
-    color: "hsl(var(--chart-1))",
-    status: "positive",
-  },
-  {
-    id: "2",
-    title: "Pending Requests",
-    value: 1843,
-    percent: 55,
-    change: "+4%",
-    color: "hsl(var(--chart-2))",
-    status: "positive",
-  },
-  {
-    id: "3",
-    title: "Rejected Requests",
-    value: 892,
-    percent: 42,
-    change: "+1%",
-    color: "hsl(var(--chart-3))",
-    status: "negative",
-  },
-];
-
-// Add different data for time ranges
-const getDataByTimeRange = (timeRange: string, type: string) => {
-  const baseData =
-    type === "woreda"
-      ? woredaStatistics
-      : type === "city"
-      ? cityStatistics
-      : subcityStatistics;
-
-  if (timeRange === "30d") {
-    // Reduce values for 30 days (about 1/3 of 90 days)
-    return baseData.map((item) => ({
-      ...item,
-      value: Math.floor(item.value * 0.33),
-      percent: Math.floor(item.percent * 0.9),
-      change: item.status === "positive" ? "+5%" : "-1%",
-    }));
-  } else if (timeRange === "7d") {
-    // Reduce values for 7 days (about 1/13 of 90 days)
-    return baseData.map((item) => ({
-      ...item,
-      value: Math.floor(item.value * 0.08),
-      percent: Math.floor(item.percent * 0.8),
-      change: item.status === "positive" ? "+2%" : "0%",
-    }));
-  }
-  return baseData;
+  if (range === "7d") return diffDays <= 7;
+  if (range === "30d") return diffDays <= 30;
+  return diffDays <= 90;
 };
+
+export type TimeRange = "90d" | "30d" | "7d";
+
+
 
 export default function VariantStatasCard() {
-  const [timeRange, setTimeRange] = React.useState("90d");
-  const [selectedType, setSelectedType] = React.useState<
-    "woreda" | "city" | "subcity"
-  >("woreda");
+  const {
+    data: dashboardData,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetDashboardStatsQuery();
 
-  const getCurrentStatistics = () => {
-    return getDataByTimeRange(timeRange, selectedType);
-  };
+  const [timeRange, setTimeRange] = React.useState<TimeRange>("90d");
+  const [selectedInstituteId, setSelectedInstituteId] = React.useState<string>("");
+  const [selectedProjectId, setSelectedProjectId] = React.useState<string | null>(null);
+
+  // Set default institute when data loads
+  React.useEffect(() => {
+    if (dashboardData?.data?.institutes?.length > 0) {
+      const firstInstitute = dashboardData.data.institutes[0];
+      if (!selectedInstituteId && firstInstitute) {
+        setSelectedInstituteId(firstInstitute.institute_id);
+      }
+    }
+  }, [dashboardData, selectedInstituteId]);
+
+  // Map the data to stat cards
+  const currentStats = React.useMemo(() => {
+    if (!dashboardData || !selectedInstituteId) return [];
+
+    // Get projects for the selected institute
+    const selectedInstitute = dashboardData.data.institutes.find(
+      (inst: any) => inst.institute_id === selectedInstituteId
+    );
+
+    if (!selectedInstitute) return [];
+
+    const projects = selectedProjectId
+      ? selectedInstitute.projects.filter((p: any) => p.project_id === selectedProjectId)
+      : selectedInstitute.projects;
+
+    // Calculate counts based on time range and status
+    let resolved = 0;
+    let pending = 0;
+    let rejected = 0;
+
+    projects.forEach((project: any) => {
+      project.issues.forEach((issue: any) => {
+        if (!isWithinRange(issue.created_at, timeRange)) return;
+
+        const bucket = normalizeStatus(issue.status);
+        if (bucket === "resolved") resolved++;
+        else if (bucket === "rejected") rejected++;
+        else pending++;
+      });
+    });
+
+    const total = resolved + pending + rejected || 1;
+
+    // Map to StatCard format
+    return [
+      {
+        id: "1",
+        title: "Resolved Requests",
+        value: resolved,
+        percent: Math.round((resolved / total) * 100),
+        change: "+0%",
+        color: "hsl(var(--chart-1))",
+        status: "positive",
+      },
+      {
+        id: "2",
+        title: "Pending Requests",
+        value: pending,
+        percent: Math.round((pending / total) * 100),
+        change: "+0%",
+        color: "hsl(var(--chart-2))",
+        status: "positive",
+      },
+      {
+        id: "3",
+        title: "Rejected Requests",
+        value: rejected,
+        percent: Math.round((rejected / total) * 100),
+        change: "-0%",
+        color: "hsl(var(--chart-3))",
+        status: "negative",
+      },
+    ];
+  }, [dashboardData, selectedInstituteId, selectedProjectId, timeRange]);
 
   const getTitleByType = () => {
-    switch (selectedType) {
-      case "woreda":
-        return "Woreda Statistics";
-      case "city":
-        return "City Statistics";
-      case "subcity":
-        return "Subcity Statistics";
-      default:
-        return "Statistics";
+    if (!dashboardData || !selectedInstituteId) return "Statistics";
+
+    const selectedInstitute = dashboardData.data.institutes.find(
+      (inst: any) => inst.institute_id === selectedInstituteId
+    );
+
+    if (!selectedInstitute) return "Statistics";
+
+    let title = `${selectedInstitute.name} Statistics`;
+
+    if (selectedProjectId) {
+      const selectedProject = selectedInstitute.projects.find(
+        (p: any) => p.project_id === selectedProjectId
+      );
+      if (selectedProject) {
+        title = `${selectedProject.name} Statistics`;
+      }
     }
+
+    return title;
   };
 
-  const currentStats = getCurrentStatistics();
+  const exportData = React.useMemo(() => {
+    if (!dashboardData || !selectedInstituteId) return [];
+
+    const institute = dashboardData.data.institutes.find(
+      (i: any) => i.institute_id === selectedInstituteId
+    );
+    if (!institute) return [];
+
+    const projects = selectedProjectId
+      ? institute.projects.filter((p: any) => p.project_id === selectedProjectId)
+      : institute.projects;
+
+    const rows: any[] = [];
+
+    projects.forEach((project: any) => {
+      project.issues.forEach((issue: any) => {
+        if (!isWithinRange(issue.created_at, timeRange)) return;
+
+        const d = new Date(issue.created_at);
+        const localDate = new Date(
+          d.getFullYear(),
+          d.getMonth(),
+          d.getDate()
+        ).toLocaleDateString();
+
+        rows.push({
+          Institute: institute.name,
+          Project: project.name,
+          Ticket: issue.ticket_number,
+          Status: normalizeStatus(issue.status),
+          "Created Date": localDate,
+        });
+      });
+    });
+
+    return rows;
+  }, [dashboardData, selectedInstituteId, selectedProjectId, timeRange]);
+
+
+  if (isLoading) {
+    return (
+      <Card className="hover:shadow-lg transition-all duration-300 border-border/50 p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-sm text-muted-foreground">Loading statistics...</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="hover:shadow-lg transition-all duration-300 border-border/50 p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-sm text-red-500 mb-2">Error loading statistics</p>
+            <button
+              onClick={() => refetch()}
+              className="text-sm text-primary hover:underline"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!dashboardData?.data?.institutes?.length) {
+    return (
+      <Card className="hover:shadow-lg transition-all duration-300 border-border/50 p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">No data available</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="hover:shadow-lg transition-all duration-300 border-border/50 p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-        <CardTitle className="text-lg font-semibold">
-          {getTitleByType()}
-        </CardTitle>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Select
-            value={selectedType}
-            onValueChange={(value: "woreda" | "city" | "subcity") =>
-              setSelectedType(value)
-            }
-          >
-            <SelectTrigger
-              className="w-full sm:w-[180px] rounded-lg bg-white"
-              aria-label="Select statistics type"
+      <div className="flex flex-col gap-6 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <CardTitle className="text-lg font-semibold">
+            {getTitleByType()}
+          </CardTitle>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={() =>
+                exportToCSV(
+                  exportData,
+                  `${getTitleByType().replace(/\s+/g, "_")}_${timeRange}.csv`
+                )
+              }
+              disabled={!exportData.length}
+              className="rounded-lg border px-4 py-2 text-sm font-medium
+             hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <SelectValue placeholder="Select type" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl bg-white">
-              <SelectItem value="woreda" className="rounded-lg">
-                Woreda Statistics
-              </SelectItem>
-              <SelectItem value="subcity" className="rounded-lg">
-                Subcity Statistics
-              </SelectItem>
-              <SelectItem value="city" className="rounded-lg">
-                City Statistics
-              </SelectItem>
-            </SelectContent>
-          </Select>
+              Export CSV
+            </Button>
 
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger
-              className="w-full sm:w-[160px] rounded-lg"
-              aria-label="Select time range"
+            <Select
+              value={selectedInstituteId}
+              onValueChange={(value) => {
+                setSelectedInstituteId(value);
+                setSelectedProjectId(null); // Reset project when institute changes
+              }}
             >
-              <SelectValue placeholder="Last 3 months" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl bg-white">
-              <SelectItem value="90d" className="rounded-lg">
-                Last 3 months
-              </SelectItem>
-              <SelectItem value="30d" className="rounded-lg">
-                Last 30 days
-              </SelectItem>
-              <SelectItem value="7d" className="rounded-lg">
-                Last 7 days
-              </SelectItem>
-            </SelectContent>
-          </Select>
+              <SelectTrigger
+                className="w-full sm:w-[180px] rounded-lg bg-white"
+                aria-label="Select organization"
+              >
+                <SelectValue placeholder="Select organization" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl bg-white">
+                {dashboardData.data.institutes.map((institute: any) => (
+                  <SelectItem
+                    key={institute.institute_id}
+                    value={institute.institute_id}
+                    className="rounded-lg"
+                  >
+                    {institute.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {selectedInstituteId && (
+              <Select
+                value={selectedProjectId || "all"}
+                onValueChange={(value) => {
+                  setSelectedProjectId(value === "all" ? null : value);
+                }}
+              >
+                <SelectTrigger
+                  className="w-full sm:w-[180px] rounded-lg bg-white"
+                  aria-label="Select project"
+                >
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl bg-white">
+                  <SelectItem value="all" className="rounded-lg">
+                    All Projects
+                  </SelectItem>
+                  {dashboardData.data.institutes
+                    .find((inst: any) => inst.institute_id === selectedInstituteId)
+                    ?.projects.map((project: any) => (
+                      <SelectItem
+                        key={project.project_id}
+                        value={project.project_id}
+                        className="rounded-lg"
+                      >
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger
+                className="w-full sm:w-[160px] rounded-lg"
+                aria-label="Select time range"
+              >
+                <SelectValue placeholder="Last 3 months" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl bg-white">
+                <SelectItem value="90d" className="rounded-lg">
+                  Last 3 months
+                </SelectItem>
+                <SelectItem value="30d" className="rounded-lg">
+                  Last 30 days
+                </SelectItem>
+                <SelectItem value="7d" className="rounded-lg">
+                  Last 7 days
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -262,20 +375,19 @@ export default function VariantStatasCard() {
                     <div className="flex items-center gap-2">
                       <Badge
                         status="outline"
-                        className={`rounded-full border-0 ${
-                          item.status === "positive"
-                            ? "bg-green-50 text-green-700"
-                            : "bg-red-50 text-red-700"
-                        }`}
+                        className={`rounded-full border-0 ${item.status === "positive"
+                          ? "bg-green-50 text-green-700"
+                          : "bg-red-50 text-red-700"
+                          }`}
                         style={{
                           backgroundColor:
                             item.status === "positive"
                               ? `${item.color
-                                  .replace("hsl", "hsla")
-                                  .replace(")", ", 0.1)")}`
+                                .replace("hsl", "hsla")
+                                .replace(")", ", 0.1)")}`
                               : `${item.color
-                                  .replace("hsl", "hsla")
-                                  .replace(")", ", 0.1)")}`,
+                                .replace("hsl", "hsla")
+                                .replace(")", ", 0.1)")}`,
                           color: item.color,
                           borderColor: `${item.color
                             .replace("hsl", "hsla")

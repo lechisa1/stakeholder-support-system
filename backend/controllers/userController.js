@@ -1607,16 +1607,7 @@ const toggleUserActiveStatus = async (req, res) => {
 const resetUserPassword = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { id } = req.params;
-
-    if (!isUuid(id)) {
-      await t.rollback();
-      return res.status(400).json({
-        success: false,
-        message: "Invalid user ID format.",
-      });
-    }
-
+    const { id } = req.user.user_id;
     const user = await User.findByPk(id, { transaction: t });
     if (!user) {
       await t.rollback();

@@ -13,6 +13,7 @@ const { swaggerUi, swaggerSpec } = require("./swagger");
 
 // ================== Here Import Routes=================
 
+const dashboardRoute = require("./routers/dashboardRoutes");
 const userRoute = require("./routers/userRoutes");
 const roleRoute = require("./routers/roleRoutes");
 const projectMetricRoute = require("./routers/projectMetricRoute");
@@ -145,6 +146,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ================== API Routes go here ==================
 
+app.use("/api/dashboard", dashboardRoute);
 app.use("/api/users", userRoute);
 app.use("/api/roles", roleRoute);
 app.use("/api/role-permission", rolePermissionRoute);

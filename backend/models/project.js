@@ -28,6 +28,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "project_id",
         as: "maintenances",
       });
+      this.hasMany(models.Issue, {
+        foreignKey: "project_id",
+        as: "issues",
+      });
       // Remove the one-to-many metric association
       this.belongsToMany(models.ProjectMetric, {
         through: models.ProjectMetricProject,
