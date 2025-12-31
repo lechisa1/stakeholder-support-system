@@ -217,7 +217,7 @@ const Profile = () => {
         description={`Profile page for ${user.full_name}`}
       />
       <div className="min-h-screen bg-[#F9FBFC] p-6 pb-24">
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="mx-auto space-y-6">
           {/* Breadcrumb */}
           <DetailHeader
               breadcrumbs={[

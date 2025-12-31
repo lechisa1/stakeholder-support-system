@@ -59,7 +59,7 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <main className="flex justify-center items-center min-h-screen z-10 relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-16">
+      <main className="flex justify-center items-center min-h-screen z-10 relative mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-16">
         <div className="text-center animate-fadeIn">
           <h1 className="text-5xl md:text-6xl font-semibold text-gray-900 leading-tight">
             <span className="block text-[#1E516A] mt-2">

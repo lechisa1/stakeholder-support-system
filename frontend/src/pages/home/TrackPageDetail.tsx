@@ -93,7 +93,7 @@ const TrackPageDetail = () => {
 
       {/* Navigation */}
       <header className="w-full z-20 bg-white/70 backdrop-blur-md shadow-md border-b border-gray-200 fixed top-0 left-0">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <img src={Logo} alt="Logo" className="w-10 h-10" />
             <h1 className="text-xl font-semibold text-[#1E516A]">Support Request Management System</h1>
