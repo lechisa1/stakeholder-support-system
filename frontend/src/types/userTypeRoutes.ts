@@ -113,7 +113,7 @@ export const navItems: NavItem[] = [
     name: "Notifications",
     path: "/notifications",
     allowedFor: ["external_user", "internal_user"],
-    permission: ["NOTIFICATIONS:READ"],
+    // permission: ["NOTIFICATIONS:READ"],
   },
   {
     icon: "PlugIcon",
