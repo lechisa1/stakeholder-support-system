@@ -1,5 +1,5 @@
 // services/dashboardService.js - Enhanced version
-const { Institute, Project, Issue } = require("../models");
+const { Institute, Project, Issue, IssuePriority } = require("../models");
 const { Sequelize } = require("sequelize");
 
 const getInternalUserDashboardWithStats = async () => {
@@ -15,6 +15,7 @@ const getInternalUserDashboardWithStats = async () => {
         "institute_id",
         "name",
         "is_active",
+        "created_at",
         [
           Sequelize.literal(`(
             SELECT COUNT(*)
@@ -52,8 +53,21 @@ const getInternalUserDashboardWithStats = async () => {
             {
               model: Issue,
               as: "issues",
-              attributes: ["issue_id", "ticket_number", "status", "created_at"],
+              attributes: [
+                "issue_id",
+                "ticket_number",
+                "status",
+                "created_at",
+                "priority_id",
+              ],
               //   limit: 10, // Limit issues per project for performance
+              include: [
+                {
+                  model: IssuePriority,
+                  as: "priority",
+                  attributes: ["name", "description", "color_value"],
+                },
+              ],
               order: [["created_at", "DESC"]],
               required: false,
             },
@@ -81,11 +95,22 @@ const getInternalUserDashboardWithStats = async () => {
             const issues = project.issues
               ? project.issues.map((issue) => {
                   totalIssues++;
+
+                  const priority = issue.priority
+                    ? {
+                        name: issue.priority.name,
+                        description: issue.priority.description,
+                        color_value: issue.priority.color_value,
+                      }
+                    : null;
+
                   return {
                     issue_id: issue.issue_id,
                     ticket_number: issue.ticket_number,
                     status: issue.status,
                     created_at: issue.created_at,
+                    priority_id: issue.priority_id,
+                    priority: priority,
                   };
                 })
               : [];
@@ -103,6 +128,7 @@ const getInternalUserDashboardWithStats = async () => {
       return {
         institute_id: institute.institute_id,
         name: institute.name,
+        created_at: institute.created_at,
         // is_active: institute.is_active,
         total_projects: institute.dataValues.total_projects || 0,
         projects: projects,

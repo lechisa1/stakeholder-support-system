@@ -22,7 +22,7 @@ export const navItems: NavItem[] = [
     name: "Dashboard",
     path: "/dashboard",
     allowedFor: ["internal_user", "external_user"],
-    permission: ["DASHBOARD:VIEW"],
+    anyPermissions: ["DASHBOARD:VIEW", "DASHBOARD:VIEW_ALL", "DASHBOARD:VIEW_OWN"],
   },
 
   // Shared parent but sub routes restricted

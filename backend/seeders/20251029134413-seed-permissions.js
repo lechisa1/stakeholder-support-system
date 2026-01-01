@@ -7,7 +7,8 @@ module.exports = {
 
     const permissions = [
       // Dashboard Access
-      { resource: "dashboard", action: "view" },
+      { resource: "dashboard", action: "view_all" },
+      { resource: "dashboard", action: "view_own" },
 
       // User Management
       { resource: "users", action: "create" },

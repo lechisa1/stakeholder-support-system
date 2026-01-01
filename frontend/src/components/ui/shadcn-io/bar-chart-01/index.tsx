@@ -17,156 +17,376 @@ import {
   SelectValue,
 } from "../../select";
 import { Card } from "../../card";
+import { useGetDashboardStatsQuery } from "../../../../redux/services/dashboardApi";
+import { Button } from "../../cn/button";
+import { exportToCSV } from "../../../../utils/dashboardHelper";
 
-export const description = "An interactive bar chart";
+export const description = "Organization project counts";
 
-const chartData = [
-  { date: "2024-04-01", desktop: 222, mobile: 150 },
-  { date: "2024-04-02", desktop: 97, mobile: 180 },
-  { date: "2024-04-03", desktop: 167, mobile: 120 },
-  { date: "2024-04-04", desktop: 242, mobile: 260 },
-  { date: "2024-04-05", desktop: 373, mobile: 290 },
-  { date: "2024-04-06", desktop: 301, mobile: 340 },
-  { date: "2024-04-07", desktop: 245, mobile: 180 },
-  { date: "2024-04-08", desktop: 409, mobile: 320 },
-  { date: "2024-04-09", desktop: 59, mobile: 110 },
-  { date: "2024-04-10", desktop: 261, mobile: 190 },
-  { date: "2024-04-11", desktop: 327, mobile: 350 },
-  { date: "2024-04-12", desktop: 292, mobile: 210 },
-  { date: "2024-04-13", desktop: 342, mobile: 380 },
-  { date: "2024-04-14", desktop: 137, mobile: 220 },
-  { date: "2024-04-15", desktop: 120, mobile: 170 },
-  { date: "2024-04-16", desktop: 138, mobile: 190 },
-  { date: "2024-04-17", desktop: 446, mobile: 360 },
-  { date: "2024-04-18", desktop: 364, mobile: 410 },
-  { date: "2024-04-19", desktop: 243, mobile: 180 },
-  { date: "2024-04-20", desktop: 89, mobile: 150 },
-  { date: "2024-04-21", desktop: 137, mobile: 200 },
-  { date: "2024-04-22", desktop: 224, mobile: 170 },
-  { date: "2024-04-23", desktop: 138, mobile: 230 },
-  { date: "2024-04-24", desktop: 387, mobile: 290 },
-  { date: "2024-04-25", desktop: 215, mobile: 250 },
-  { date: "2024-04-26", desktop: 75, mobile: 130 },
-  { date: "2024-04-27", desktop: 383, mobile: 420 },
-  { date: "2024-04-28", desktop: 122, mobile: 180 },
-  { date: "2024-04-29", desktop: 315, mobile: 240 },
-  { date: "2024-04-30", desktop: 454, mobile: 380 },
-];
-
-const chartConfig = {
-  views: {
-    label: "Page Views",
-  },
-  desktop: {
-    label: "Internal Users",
-    color: "hsl(var(--chart-1))",
-  },
-  mobile: {
-    label: "External Users",
-    color: "hsl(var(--chart-2))",
-  },
-} satisfies ChartConfig;
-
-type ChartDataKey = keyof Pick<(typeof chartData)[0], "desktop" | "mobile">;
-
+/* =========================
+   COMPONENT
+   ========================= */
 export function ChartBarInteractive() {
-  const [activeChart, setActiveChart] = React.useState<ChartDataKey>("desktop");
+  const { data: dashboardData, isLoading, isError } = useGetDashboardStatsQuery();
 
-  const total = React.useMemo(
-    () => ({
-      desktop: chartData.reduce((acc, curr) => acc + curr.desktop, 0),
-      mobile: chartData.reduce((acc, curr) => acc + curr.mobile, 0),
-    }),
-    []
-  );
+  // State for selected year
+  const [selectedYear, setSelectedYear] = React.useState<string>("all");
+
+  // Generate year options from organization creation dates
+  const yearOptions = React.useMemo(() => {
+    if (!dashboardData?.data?.institutes) return [{ value: "all", label: "All Years" }];
+
+    const years = new Set<number>();
+
+    // Collect all years from organization creation dates
+    dashboardData.data.institutes.forEach((institute: any) => {
+      if (institute.created_at) {
+        const year = new Date(institute.created_at).getFullYear();
+        years.add(year);
+      }
+    });
+
+    // Convert to array and sort
+    const yearsArray = Array.from(years).sort();
+
+    // If no years found, use current year
+    if (yearsArray.length === 0) {
+      const currentYear = new Date().getFullYear();
+      yearsArray.push(currentYear);
+    }
+
+    // Add "all" option
+    const options = [
+      { value: "all", label: "All Years" }
+    ];
+
+    // Add years from earliest to most recent
+    yearsArray.forEach(year => {
+      options.push({ value: year.toString(), label: year.toString() });
+    });
+
+    // Add future years (up to 5 years from the latest)
+    const latestYear = Math.max(...yearsArray);
+    for (let i = 1; i <= 5; i++) {
+      const futureYear = latestYear + i;
+      options.push({
+        value: futureYear.toString(),
+        label: futureYear.toString()
+      });
+    }
+
+    return options;
+  }, [dashboardData]);
+
+  // Transform data for chart - Filter organizations by creation year
+  const chartData = React.useMemo(() => {
+    if (!dashboardData?.data?.institutes) return [];
+
+    return dashboardData.data.institutes
+      .map((institute: any) => {
+        const orgYear = institute.created_at
+          ? new Date(institute.created_at).getFullYear()
+          : null;
+
+        // Check if organization should be included based on year filter
+        const shouldInclude = selectedYear === "all" ||
+          (orgYear && orgYear === parseInt(selectedYear));
+
+        return {
+          name: institute.name,
+          projects: institute.projects?.length || 0,
+          instituteId: institute.institute_id,
+          createdYear: orgYear,
+          createdDate: institute.created_at,
+          shouldInclude,
+        };
+      })
+      .filter(org => org.projects > 0 && org.shouldInclude) // Only show orgs with projects and matching year
+      .sort((a, b) => b.projects - a.projects); // Sort by project count descending
+  }, [dashboardData, selectedYear]);
+
+  // Calculate totals for the select dropdown
+  const totals = React.useMemo(() => {
+    const totalProjects = chartData.reduce((sum, org) => sum + org.projects, 0);
+    const totalOrganizations = chartData.length;
+
+    return {
+      totalProjects,
+      totalOrganizations,
+    };
+  }, [chartData]);
+
+  // Calculate total organizations for "All Years" option
+  const totalAllOrganizations = React.useMemo(() => {
+    if (!dashboardData?.data?.institutes) return 0;
+
+    return dashboardData.data.institutes
+      .filter((institute: any) => institute.projects?.length > 0)
+      .length;
+  }, [dashboardData]);
+
+  // Calculate total projects for "All Years" option
+  const totalAllProjects = React.useMemo(() => {
+    if (!dashboardData?.data?.institutes) return 0;
+
+    return dashboardData.data.institutes.reduce((sum: number, institute: any) => {
+      return sum + (institute.projects?.length || 0);
+    }, 0);
+  }, [dashboardData]);
+
+  // Chart configuration
+  const chartConfig = {
+    projects: {
+      label: "Number of Projects",
+      color: "hsl(var(--chart-1))",
+    },
+  } satisfies ChartConfig;
+
+  const exportData = React.useMemo(() => {
+    if (!chartData.length) return [];
+
+    return chartData.map((org) => ({
+      Organization: org.name,
+      "Created Year": org.createdYear ?? "N/A",
+      "Created Date": org.createdDate
+        ? new Date(org.createdDate).toLocaleDateString()
+        : "N/A",
+      "Project Count": org.projects,
+    }));
+  }, [chartData]);
+
+
+  if (isLoading) {
+    return (
+      <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-sm text-muted-foreground">Loading organization data...</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-sm text-red-500 mb-2">Error loading chart data</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-sm text-primary hover:underline"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!dashboardData?.data?.institutes?.length) {
+    return (
+      <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">No organization data available</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
+      {/* Header */}
       <div className="flex flex-col items-stretch border-b pb-4 mb-4 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1">
-          <h3 className="text-lg font-semibold">User Statistics - 2024</h3>
+          <h3 className="text-lg font-semibold">Organization Projects</h3>
           <p className="text-sm text-muted-foreground">
-            Monthly users by user types
+            {selectedYear === "all"
+              ? "Number of projects across all organizations"
+              : `Organizations created in ${selectedYear} and their projects`}
           </p>
         </div>
-        <Select
-          value={activeChart}
-          onValueChange={(val) => setActiveChart(val as ChartDataKey)}
-        >
-          <SelectTrigger className="w-[180px] rounded-lg">
-            <SelectValue placeholder="Select Chart" />
-          </SelectTrigger>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() =>
+              exportToCSV(
+                exportData,
+                `organizations_projects_${selectedYear}.csv`
+              )
+            }
+            disabled={!exportData.length}
+            className="h-8 rounded-lg border px-3 text-xs font-medium
+             hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Export CSV
+          </Button>
 
-          <SelectContent className="rounded-xl bg-white">
-            {Object.keys(chartConfig)
-              .filter((key) => key !== "views") // Filter out 'views' from the select options
-              .map((key) => {
-                const chart = key as ChartDataKey;
+          {/* Year Filter - Now enabled with organization creation dates */}
+          <Select
+            value={selectedYear}
+            onValueChange={setSelectedYear}
+          >
+            <SelectTrigger className="w-[180px] rounded-lg bg-white">
+              <SelectValue placeholder="Select Year" />
+            </SelectTrigger>
+
+            <SelectContent className="rounded-xl bg-white">
+              {yearOptions.map((yearOption) => {
+                // Calculate totals for each year option
+                let yearTotalProjects = 0;
+                let yearTotalOrgs = 0;
+
+                if (yearOption.value === "all") {
+                  yearTotalProjects = totalAllProjects;
+                  yearTotalOrgs = totalAllOrganizations;
+                } else {
+                  const year = parseInt(yearOption.value);
+                  dashboardData.data.institutes.forEach((institute: any) => {
+                    if (institute.created_at) {
+                      const orgYear = new Date(institute.created_at).getFullYear();
+                      if (orgYear === year) {
+                        yearTotalOrgs++;
+                        yearTotalProjects += institute.projects?.length || 0;
+                      }
+                    }
+                  });
+                }
 
                 return (
                   <SelectItem
-                    key={chart}
-                    value={chart}
-                    className="rounded-lg flex justify-between"
+                    key={yearOption.value}
+                    value={yearOption.value}
+                    className="rounded-lg"
                   >
-                    <div className="flex items-center space-x-2">
-                      <span className="text-muted-foreground text-xs">
-                        {chartConfig[chart].label}:
-                      </span>
-                      <span className="font-bold text-sm">
-                        {total[chart].toLocaleString()}
-                      </span>
+                    <div className="flex flex-col">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">
+                          {yearOption.label}
+                        </span>
+                      </div>
                     </div>
                   </SelectItem>
                 );
               })}
-          </SelectContent>
-        </Select>
+            </SelectContent>
+          </Select></div>
       </div>
+
+      {/* Chart */}
       <div className="flex-1 flex items-center justify-center min-h-0">
-        <ChartContainer config={chartConfig} className="h-[250px] w-full">
-          <BarChart
-            accessibilityLayer
-            data={chartData}
-            margin={{
-              left: 12,
-              right: 12,
-            }}
-          >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={32}
-              tickFormatter={(value) => {
-                const date = new Date(value);
-                return date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                });
+        {chartData.length > 0 ? (
+          <ChartContainer config={chartConfig} className="h-[250px] w-full">
+            <BarChart
+              accessibilityLayer
+              data={chartData}
+              margin={{
+                left: 12,
+                right: 12,
+                top: 12,
+                bottom: 12,
               }}
-            />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  className="w-[150px]"
-                  nameKey="views"
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    });
-                  }}
-                />
-              }
-            />
-            <Bar dataKey={activeChart} fill={`var(--color-${activeChart})`} />
-          </BarChart>
-        </ChartContainer>
+            >
+              <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <XAxis
+                dataKey="name"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                minTickGap={10}
+                interval={0}
+                angle={-45}
+                textAnchor="end"
+                height={60}
+                tickFormatter={(value) => {
+                  // Truncate long organization names
+                  if (value.length > 10) {
+                    return value.substring(0, 10) + '...';
+                  }
+                  return value;
+                }}
+              />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    className="w-[200px]"
+                    nameKey="projects"
+                    labelFormatter={(value) => {
+                      const org = chartData.find(org => org.name === value);
+                      return org?.name || value;
+                    }}
+                    formatter={(value, name) => [
+                      `${value} project${value === 1 ? '' : 's'}`,
+                      'Project Count'
+                    ]}
+                    labelClassName="font-semibold"
+                    indicator="dot"
+                  />
+                }
+              />
+              <Bar
+                dataKey="projects"
+                fill={`var(--color-projects)`}
+                radius={[4, 4, 0, 0]}
+                barSize={40}
+              />
+            </BarChart>
+          </ChartContainer>
+        ) : (
+          <div className="flex items-center justify-center h-64 w-full">
+            <p className="text-sm text-muted-foreground">
+              {selectedYear === "all"
+                ? "No projects found for any organization"
+                : `No organizations created in ${selectedYear} have projects`}
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Footer with summary stats */}
+      {chartData.length > 0 && (
+        <div className="flex flex-col items-start gap-2 text-sm pt-4 border-t">
+          <div className="flex items-center gap-2 leading-none font-medium">
+            <span>
+              {selectedYear === "all"
+                ? "All Organizations Summary"
+                : `Organizations Created in ${selectedYear}`}
+            </span>
+          </div>
+
+          {/* Summary Stats */}
+          <div className="flex flex-wrap gap-4 mt-1 text-xs">
+            <div className="flex items-center gap-1">
+              <span className="font-medium">Organizations:</span>
+              <span className="text-muted-foreground">{totals.totalOrganizations}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-medium">Total Projects:</span>
+              <span className="text-muted-foreground">{totals.totalProjects}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="font-medium">Avg Projects/Org:</span>
+              <span className="text-muted-foreground">
+                {totals.totalOrganizations > 0
+                  ? (totals.totalProjects / totals.totalOrganizations).toFixed(1)
+                  : "0.0"}
+              </span>
+            </div>
+            {selectedYear !== "all" && chartData[0]?.createdDate && (
+              <div className="flex items-center gap-1">
+                <span className="font-medium">Earliest Created:</span>
+                <span className="text-muted-foreground">
+                  {new Date(chartData[chartData.length - 1].createdDate).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
