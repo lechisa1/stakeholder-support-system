@@ -155,8 +155,8 @@ export function ChartBarMixed() {
     if (chartData.length === 0) {
       return {
         icon: Minus,
-        text: "No issues found",
-        description: "No maintenance requests for selected filters"
+        text: "No Requests found",
+        description: "No Requests for selected filters"
       };
     }
 
@@ -179,31 +179,31 @@ export function ChartBarMixed() {
       return {
         icon: CheckCircle,
         text: "High completion rate",
-        description: "Most issues are resolved or closed"
+        description: "Most Requests are resolved or closed"
       };
     } else if (activeRatio > 0.6) {
       return {
         icon: AlertCircle,
-        text: "Many active issues",
-        description: "High number of pending or in-progress issues"
+        text: "Many active Requests",
+        description: "High number of pending or in-progress Requests"
       };
     } else if (chartData.find(item => item.status === 'escalated')?.requests || 0 > totalRequests * 0.3) {
       return {
         icon: ArrowUpRight,
         text: "High escalation rate",
-        description: "Many issues require escalation"
+        description: "Many Requests require escalation"
       };
     } else if (completionRatio > 0.4) {
       return {
         icon: TrendingUp,
         text: "Good progress",
-        description: "Making steady progress on issue resolution"
+        description: "Making steady progress on Request resolution"
       };
     } else {
       return {
         icon: Minus,
         text: "Needs attention",
-        description: "Requires focus on issue resolution"
+        description: "Requires focus on Request resolution"
       };
     }
   }, [chartData]);
@@ -291,7 +291,7 @@ export function ChartBarMixed() {
   return (
     <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pb-4 mb-4">
+      <div className="flex flex-col justify-start items-start 3xl:flex-row gap-4 pb-4 mb-4">
         <div className="grid flex-1 gap-1">
           <h3 className="text-lg font-semibold">Requests by Status</h3>
           <p className="text-sm text-muted-foreground">
@@ -465,7 +465,7 @@ export function ChartBarMixed() {
         {chartData.length > 0 && (
           <div className="flex flex-wrap gap-4 mt-3 text-xs">
             <div className="flex items-center gap-1">
-              <span className="font-medium">Total Issues:</span>
+              <span className="font-medium">Total Requests:</span>
               <span className="text-muted-foreground">
                 {chartData.reduce((sum, item) => sum + item.requests, 0)}
               </span>
