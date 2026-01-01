@@ -142,15 +142,15 @@ const fillMissingDates = (
 const chartConfig = {
   pending: {
     label: "Pending",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(var(--chart-7))",
   },
   resolved: {
     label: "Resolved",
-    color: "hsl(var(--chart-2))",
+    color: "hsl(var(--chart-1))",
   },
   rejected: {
     label: "Rejected",
-    color: "hsl(var(--chart-3))",
+    color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;
 
@@ -396,7 +396,7 @@ export function ChartAreaInteractive() {
   return (
     <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pb-4 mb-4">
+      <div className="flex flex-col justify-start items-start 3xl:flex-row gap-4 pb-4 mb-4">
         <div className="grid flex-1 gap-1">
           <h3 className="text-lg font-semibold">
             Maintenance Support Requests

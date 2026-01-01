@@ -118,7 +118,7 @@ export default function VariantStatasCard() {
         value: pending,
         percent: Math.round((pending / total) * 100),
         change: "+0%",
-        color: "hsl(var(--chart-2))",
+        color: "hsl(var(--chart-7))",
         status: "positive",
       },
       {
@@ -127,7 +127,7 @@ export default function VariantStatasCard() {
         value: rejected,
         percent: Math.round((rejected / total) * 100),
         change: "-0%",
-        color: "hsl(var(--chart-3))",
+        color: "hsl(var(--chart-2))",
         status: "negative",
       },
     ];

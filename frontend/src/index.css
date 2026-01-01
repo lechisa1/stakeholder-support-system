@@ -158,12 +158,13 @@ layer(base);
   --ring: 201 85% 18%;
   --radius: 0.625rem;
   --chart-1: 142 70% 45%; /* near green */
-  --chart-2: 0 75% 65%; /* light red */
+  --chart-2: 0 100% 45%; /* light red */
 
   --chart-3: 197 37% 24%;
   --chart-4: 43 74% 66%;
   --chart-5: 27 87% 67%;
   --chart-6: 7 27% 87%;
+  --chart-7: 45 100% 50%;
 
   --sidebar-primary: 201 85% 18%;
   --sidebar-primary-foreground: 0 0% 100%;
@@ -239,7 +240,6 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
-
 
 @layer base {
   *,
