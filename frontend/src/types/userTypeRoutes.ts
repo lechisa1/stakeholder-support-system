@@ -109,6 +109,13 @@ export const navItems: NavItem[] = [
     permission: ["REQUEST:VIEW_ALL"],
   },
   {
+    icon: "Bell",
+    name: "Notifications",
+    path: "/notifications",
+    allowedFor: ["external_user", "internal_user"],
+    permission: ["NOTIFICATIONS:READ"],
+  },
+  {
     icon: "PlugIcon",
     name: "System Settings",
     subItems: [

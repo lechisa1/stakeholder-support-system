@@ -145,7 +145,7 @@ const Notifications: React.FC = () => {
       
 
       <div className="flex items-center py-4 justify-between flex-wrap gap-4 mb-6">
-        <div className="flex gap-2 border p-2 rounded-lg">
+        <div className="flex gap-2 border p-2 px-4 rounded-lg">
           {(Object.keys(CATEGORY_MAP) as Category[]).map((category) => (
             <button
               key={category}
@@ -154,7 +154,7 @@ const Notifications: React.FC = () => {
                 "px-5 py-1.5 text-sm rounded-lg transition",
                 activeCategory === category
                   ? "bg-[#073954] text-white"
-                  : "bg-gray-100 border text-gray-700 hover:bg-gray-200"
+                  : "bg-blue-50 border text-gray-700 hover:bg-blue-100"
               )}
             ><span className="flex items-center gap-2">
             {CATEGORY_ICONS[category]}
