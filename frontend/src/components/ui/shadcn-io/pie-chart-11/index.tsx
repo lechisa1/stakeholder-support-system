@@ -206,7 +206,7 @@ export function ChartPieInteractive() {
       <ChartStyle id={id} config={chartConfig} />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col 3xl:flex-row items-start gap-3 justify-between ">
         <div className="grid gap-1">
           <h3 className="text-lg font-semibold">
             Maintenance Support Requests
