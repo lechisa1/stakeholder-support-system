@@ -60,7 +60,7 @@ export default function UserDropdown() {
               to="/profile"
               className="flex items-center gap-3 px-4 py-2 font-medium text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800 transition-colors text-sm"
             >
-              Edit profile
+              Profile
             </DropdownItem>
           </li>
           <li>

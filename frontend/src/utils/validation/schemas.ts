@@ -7,7 +7,7 @@ import { rules, createSchema } from "./rules";
 
 // Login schema (already exists, re-exported for consistency)
 export const signInSchema = z.object({
-  email: rules.email(),
+  email: z.string().trim().email("Invalid email address"),
   password: z.string().min(3, "Password must be at least 3 characters"),
 });
 export type SignInFormData = z.infer<typeof signInSchema>;

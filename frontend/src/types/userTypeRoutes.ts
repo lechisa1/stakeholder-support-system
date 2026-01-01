@@ -22,7 +22,7 @@ export const navItems: NavItem[] = [
     name: "Dashboard",
     path: "/dashboard",
     allowedFor: ["internal_user", "external_user"],
-    permission: ["DASHBOARD:VIEW"],
+    anyPermissions: ["DASHBOARD:VIEW", "DASHBOARD:VIEW_ALL", "DASHBOARD:VIEW_OWN"],
   },
 
   // Shared parent but sub routes restricted
@@ -124,11 +124,11 @@ export const navItems: NavItem[] = [
         allowedFor: ["external_user", "internal_user"],
         permission: ["ORGANIZATIONS:UPDATE"],
       },
-      {
-        name: "Settings",
-        path: "/settings",
-        allowedFor: ["external_user", "internal_user"],
-      },
+      // {
+      //   name: "Settings",
+      //   path: "/settings",
+      //   allowedFor: ["external_user", "internal_user"],
+      // },
     ],
     allowedFor: ["external_user", "internal_user"],
   },

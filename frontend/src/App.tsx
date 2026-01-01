@@ -64,6 +64,8 @@ import OrganizationProfile from "./pages/profile/OrganizationProfile";
 import ExternalLogin from "./components/auth/ExternalLogin";
 import Notifications from "./pages/notification/Notifications";
 import ChangePassword from "./components/auth/ChangePassword";
+import ForgotPassword from "./components/auth/ForgotPassword";
+import VerifyPassword from "./components/auth/VerifyPassword";
 const AuthLoader = () => {
   return (
     <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
@@ -192,6 +194,22 @@ function AppContent() {
             element={
               <PublicRoute>
                 <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <ForgotPassword />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/verify-password"
+            element={
+              <PublicRoute>
+                <VerifyPassword />
               </PublicRoute>
             }
           />

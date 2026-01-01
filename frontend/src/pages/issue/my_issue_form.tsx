@@ -377,9 +377,13 @@ export default function AddIssue() {
                     <Select
                       value={formValues.priority_id}
                       onValueChange={(value) => {
+                        if (priorities.find((p) => p.priority_id === value)?.is_active) {
                           setTempPriorityId(value);
                           setShowPriorityModal(true);
-                        }}
+                        } else {
+                          handleChange("priority_id", value);
+                        }
+                      }}
                       >
                         <SelectTrigger
                           className={`h-10 border bg-white p-2 rounded mt-1 text-gray-700 ${

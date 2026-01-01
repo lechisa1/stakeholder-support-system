@@ -97,31 +97,33 @@ export default function UserIssueDetail() {
     }
   };
   // Update toggleSection function to include reRaises
-const toggleSection = (section: "escalations" | "resolutions" | "rejects" | "reRaises") => {
-  setExpandedSections((prev) => ({
-    ...prev,
-    [section]: !prev[section],
-  }));
-};
+  const toggleSection = (
+    section: "escalations" | "resolutions" | "rejects" | "reRaises"
+  ) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
 
-// Toggle individual reRaise accordion
-const toggleReRaise = (reRaiseId: string) => {
-  setExpandedReRaises((prev) =>
-    prev.includes(reRaiseId)
-      ? prev.filter((id) => id !== reRaiseId)
-      : [...prev, reRaiseId]
-  );
-};
+  // Toggle individual reRaise accordion
+  const toggleReRaise = (reRaiseId: string) => {
+    setExpandedReRaises((prev) =>
+      prev.includes(reRaiseId)
+        ? prev.filter((id) => id !== reRaiseId)
+        : [...prev, reRaiseId]
+    );
+  };
 
-// Expand/Collapse all reRaises
-const toggleAllReRaises = () => {
-  if (!issue?.reRaises) return;
-  if (expandedReRaises.length === issue.reRaises.length) {
-    setExpandedReRaises([]);
-  } else {
-    setExpandedReRaises(issue.reRaises.map((reRaise) => reRaise.re_raise_id));
-  }
-};
+  // Expand/Collapse all reRaises
+  const toggleAllReRaises = () => {
+    if (!issue?.reRaises) return;
+    if (expandedReRaises.length === issue.reRaises.length) {
+      setExpandedReRaises([]);
+    } else {
+      setExpandedReRaises(issue.reRaises.map((reRaise) => reRaise.re_raise_id));
+    }
+  };
 
   // Toggle individual escalation accordion
   const toggleEscalation = (escalationId: string) => {
@@ -1065,188 +1067,207 @@ const toggleAllReRaises = () => {
                   </AnimatePresence>
                 </div>
               )}
-{/* Support Request ReRaises Section */}
-{issue?.reRaises && issue.reRaises.length > 0 && (
-  <div className="mb-6">
-    <div className="flex items-center justify-between mb-4 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
-      <div className="flex items-center gap-3">
-        <div className="w-2 h-8 bg-orange-600 rounded-full"></div>
-        <div>
-          <h3 className="text-[#1E516A] font-bold text-lg">
-            Re-raised ({issue.reRaises.length})
-          </h3>
-          <p className="text-sm text-gray-600">
-            Re-raised requests with reasons
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleAllReRaises}
-          className="text-orange-700 border-orange-700 hover:bg-orange-50"
-        >
-          {expandedReRaises.length === issue.reRaises.length
-            ? "Collapse All"
-            : "Expand All"}
-        </Button>
-        <button
-          onClick={() => toggleSection("reRaises")}
-          className="p-2 hover:bg-white rounded-lg transition-colors"
-        >
-          {expandedSections.reRaises ? (
-            <ChevronUp className="w-5 h-5 text-orange-700" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-orange-700" />
-          )}
-        </button>
-      </div>
-    </div>
-
-    <AnimatePresence>
-      {expandedSections.reRaises && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.3 }}
-          className="space-y-4"
-        >
-          {issue.reRaises.map((reRaise, reRaiseIndex) => {
-            const isExpanded = expandedReRaises.includes(reRaise.re_raise_id);
-            const reRaiseFiles =
-              reRaise.attachments?.map((attachment) => ({
-                url: getFileUrl(attachment.attachment.file_path),
-                name: attachment.attachment.file_name,
-                path: attachment.attachment.file_path,
-                type: getFileType(attachment.attachment.file_name),
-                uploadedAt: attachment.attachment.created_at,
-                reRaiseId: reRaise.re_raise_id,
-                reRaisedBy: reRaise.re_raiser?.full_name,
-                reRaisedAt: reRaise.re_raised_at,
-                reason: reRaise.reason,
-              })) || [];
-
-            return (
-              <div
-                key={reRaise.re_raise_id}
-                className="border border-[#BFD7EA] rounded-lg overflow-hidden"
-              >
-                {/* ReRaise Header */}
-                <div
-                  className="p-4 cursor-pointer hover:bg-orange-50 transition-colors flex items-center justify-between"
-                  onClick={() => toggleReRaise(reRaise.re_raise_id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                      <span className="font-bold text-orange-700">
-                        {reRaiseIndex + 1}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-[#1E516A]">
-                        {reRaise.re_raiser?.full_name || "Reporter"}
-                      </h4>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                        <span>
-                          By: {reRaise.re_raiser?.full_name || 
-                          issue.reporter?.full_name || "N/A"}
-                        </span>
-                        <span>•</span>
-                        <span>
-                          On: {reRaise.re_raised_at ? 
-                          formatDate(reRaise.re_raised_at) : 
-                          formatDate(reRaise.created_at)}
-                        </span>
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                          Re-raised
-                        </span>
+              {/* Support Request ReRaises Section */}
+              {issue?.reRaises && issue.reRaises.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-8 bg-orange-600 rounded-full"></div>
+                      <div>
+                        <h3 className="text-[#1E516A] font-bold text-lg">
+                          Re-raised ({issue.reRaises.length})
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Re-raised requests with reasons
+                        </p>
                       </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleAllReRaises}
+                        className="text-orange-700 border-orange-700 hover:bg-orange-50"
+                      >
+                        {expandedReRaises.length === issue.reRaises.length
+                          ? "Collapse All"
+                          : "Expand All"}
+                      </Button>
+                      <button
+                        onClick={() => toggleSection("reRaises")}
+                        className="p-2 hover:bg-white rounded-lg transition-colors"
+                      >
+                        {expandedSections.reRaises ? (
+                          <ChevronUp className="w-5 h-5 text-orange-700" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-orange-700" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {reRaiseFiles.length > 0 && (
-                      <span className="text-sm text-gray-500 flex items-center gap-1">
-                        <FileText className="w-4 h-4" />
-                        {reRaiseFiles.length}
-                      </span>
-                    )}
-                    {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 text-orange-700" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-orange-700" />
-                    )}
-                  </div>
-                </div>
 
-                {/* ReRaise Content (Accordion Body) */}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="p-4 border-t border-[#BFD7EA] bg-white"
-                    >
-                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
-                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                            Re-raise Reason
-                          </p>
-                          <p className="text-gray-700">
-                            {reRaise.reason || "No reason provided"}
-                          </p>
-                        </div>
-                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
-                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                            {reRaise.re_raiser ? "Re-raised By" : "Reporter"} Contact
-                          </p>
-                          <div className="text-sm">
-                            <p className="text-gray-600">
-                              {reRaise.re_raiser?.email || 
-                               issue.reporter?.email || "N/A"}
-                            </p>
-                            <p className="text-gray-500 text-xs mt-1">
-                              {reRaise.re_raiser?.phone_number || 
-                               issue.reporter?.phone_number || "No phone number"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                  <AnimatePresence>
+                    {expandedSections.reRaises && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-4"
+                      >
+                        {issue.reRaises.map((reRaise, reRaiseIndex) => {
+                          const isExpanded = expandedReRaises.includes(
+                            reRaise.re_raise_id
+                          );
+                          const reRaiseFiles =
+                            reRaise.attachments?.map((attachment) => ({
+                              url: getFileUrl(attachment.attachment.file_path),
+                              name: attachment.attachment.file_name,
+                              path: attachment.attachment.file_path,
+                              type: getFileType(
+                                attachment.attachment.file_name
+                              ),
+                              uploadedAt: attachment.attachment.created_at,
+                              reRaiseId: reRaise.re_raise_id,
+                              reRaisedBy: reRaise.re_raiser?.full_name,
+                              reRaisedAt: reRaise.re_raised_at,
+                              reason: reRaise.reason,
+                            })) || [];
 
-                      {/* ReRaise Attachments */}
-                      {reRaiseFiles.length > 0 && (
-                        <div className="mt-4">
-                          <h5 className="font-semibold text-[#1E516A] mb-3">
-                            Attachments ({reRaiseFiles.length})
-                          </h5>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {reRaiseFiles.map((file, idx) => (
-                              <FileCard
-                                key={`${reRaise.re_raise_id}-${idx}`}
-                                file={file}
-                                onOpen={() =>
-                                  openFileViewer(reRaiseFiles, idx)
+                          return (
+                            <div
+                              key={reRaise.re_raise_id}
+                              className="border border-[#BFD7EA] rounded-lg overflow-hidden"
+                            >
+                              {/* ReRaise Header */}
+                              <div
+                                className="p-4 cursor-pointer hover:bg-orange-50 transition-colors flex items-center justify-between"
+                                onClick={() =>
+                                  toggleReRaise(reRaise.re_raise_id)
                                 }
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-)}
-              
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                                    <span className="font-bold text-orange-700">
+                                      {reRaiseIndex + 1}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <h4 className="font-semibold text-[#1E516A]">
+                                      {reRaise.re_raiser?.full_name ||
+                                        "Reporter"}
+                                    </h4>
+                                    <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                                      <span>
+                                        By:{" "}
+                                        {reRaise.re_raiser?.full_name ||
+                                          issue.reporter?.full_name ||
+                                          "N/A"}
+                                      </span>
+                                      <span>•</span>
+                                      <span>
+                                        On:{" "}
+                                        {reRaise.re_raised_at
+                                          ? formatDate(reRaise.re_raised_at)
+                                          : formatDate(reRaise.created_at)}
+                                      </span>
+                                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                        Re-raised
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  {reRaiseFiles.length > 0 && (
+                                    <span className="text-sm text-gray-500 flex items-center gap-1">
+                                      <FileText className="w-4 h-4" />
+                                      {reRaiseFiles.length}
+                                    </span>
+                                  )}
+                                  {isExpanded ? (
+                                    <ChevronUp className="w-5 h-5 text-orange-700" />
+                                  ) : (
+                                    <ChevronDown className="w-5 h-5 text-orange-700" />
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* ReRaise Content (Accordion Body) */}
+                              <AnimatePresence>
+                                {isExpanded && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="p-4 border-t border-[#BFD7EA] bg-white"
+                                  >
+                                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
+                                        <p className="font-semibold text-[#1E516A] text-sm mb-1">
+                                          Re-raise Reason
+                                        </p>
+                                        <p className="text-gray-700">
+                                          {reRaise.reason ||
+                                            "No reason provided"}
+                                        </p>
+                                      </div>
+                                      <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
+                                        <p className="font-semibold text-[#1E516A] text-sm mb-1">
+                                          {reRaise.re_raiser
+                                            ? "Re-raised By"
+                                            : "Reporter"}{" "}
+                                          Contact
+                                        </p>
+                                        <div className="text-sm">
+                                          <p className="text-gray-600">
+                                            {reRaise.re_raiser?.email ||
+                                              issue.reporter?.email ||
+                                              "N/A"}
+                                          </p>
+                                          <p className="text-gray-500 text-xs mt-1">
+                                            {reRaise.re_raiser?.phone_number ||
+                                              issue.reporter?.phone_number ||
+                                              "No phone number"}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* ReRaise Attachments */}
+                                    {reRaiseFiles.length > 0 && (
+                                      <div className="mt-4">
+                                        <h5 className="font-semibold text-[#1E516A] mb-3">
+                                          Attachments ({reRaiseFiles.length})
+                                        </h5>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                          {reRaiseFiles.map((file, idx) => (
+                                            <FileCard
+                                              key={`${reRaise.re_raise_id}-${idx}`}
+                                              file={file}
+                                              onOpen={() =>
+                                                openFileViewer(
+                                                  reRaiseFiles,
+                                                  idx
+                                                )
+                                              }
+                                            />
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
               {issue?.status === "resolved" && (
                 <>
                   <h3 className="text-[#1E516A] font-semibold text-lg mt-4 mb-3 flex items-center gap-2">

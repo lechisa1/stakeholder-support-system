@@ -31,14 +31,25 @@ export const CATEGORY_MAP = {
   ],
   SYSTEM: ["SYSTEM_ALERT", "BROADCAST_MESSAGE"],
 } as const;
+const CATEGORY_ICONS: Record<Category, React.ReactNode> = {
+  ISSUE: <AlertCircle className="h-4 w-4" />,
+  USER: <User className="h-4 w-4" />,
+  SYSTEM: <Shield className="h-4 w-4" />,
+};
+
 
 type Category = keyof typeof CATEGORY_MAP;
 type StatusFilter = "ALL" | "UNREAD" | "READ";
 
 const getIcon = (type: string) => {
-  if (type.startsWith("ISSUE")) return <AlertCircle className="h-5 w-5 text-[#073954]" />;
-  if (CATEGORY_MAP.USER.includes(type as any)) return <User className="h-5 w-5 text-[#073954]" />;
+  if (type.startsWith("ISSUE"))
+    return <AlertCircle className="h-5 w-5 text-[#073954]" />;
+  if (CATEGORY_MAP.USER.includes(type as any))
+    return <User className="h-5 w-5 text-[#073954]" />;
   return <Shield className="h-5 w-5 text-[#073954]" />;
+};
+const formatDateLabel = (date: Date) => {
+  return date.toLocaleDateString("en-GB"); // 12/12/2025
 };
 
 const Notifications: React.FC = () => {
@@ -86,46 +97,55 @@ const Notifications: React.FC = () => {
   };
 
   // MARK SINGLE NOTIFICATION AS READ
- // MARK SINGLE NOTIFICATION AS READ
- const handleNotificationClick = async (notification: any) => {
-  if (!notification.is_read) {
-    try {
-      // Only send notification_id
-      await markNotificationAsRead({ notification_id: notification.notification_id }).unwrap();
-      refetch(); // refresh the list
-    } catch (err) {
-      console.error("Failed to mark notification as read", err);
+  const handleNotificationClick = async (notification: any) => {
+    if (!notification.is_read) {
+      try {
+        // Only send notification_id
+        await markNotificationAsRead({
+          notification_id: notification.notification_id,
+        }).unwrap();
+        refetch(); // refresh the list
+      } catch (err) {
+        console.error("Failed to mark notification as read", err);
+      }
     }
-  }
 
-  // if (notification.issue) {
-  //   navigate(`/task/${notification.issue.issue_id}`);
-  // }
-};
-
-
-
+    // if (notification.issue) {
+    //   navigate(`/task/${notification.issue.issue_id}`);
+    // }
+  };
 
   const filteredNotifications = useMemo(() => {
-    return notifications.filter((n) => {
-      const categoryMatch = CATEGORY_MAP[activeCategory].includes(n.type as any);
-      const statusMatch =
-        statusFilter === "ALL" ||
-        (statusFilter === "UNREAD" && !n.is_read) ||
-        (statusFilter === "READ" && n.is_read);
-      return categoryMatch && statusMatch;
-    });
+    return notifications
+      .filter((n) => {
+        const categoryMatch = CATEGORY_MAP[activeCategory].includes(
+          n.type as any
+        );
+        const statusMatch =
+          statusFilter === "ALL" ||
+          (statusFilter === "UNREAD" && !n.is_read) ||
+          (statusFilter === "READ" && n.is_read);
+        return categoryMatch && statusMatch;
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
   }, [notifications, activeCategory, statusFilter]);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold text-[#073954] flex items-center gap-2 mb-5">
+    <>
+    <div className="bg-white p-6 pb-1 rounded-lg shadow-md mb-6">
+      <h1 className="text-2xl font-semibold border-b border-gray-200 pb-4 text-[#073954]  flex items-center gap-2 mb-5">
         <Bell className="h-6 w-6" />
         Notifications
       </h1>
+    </div>
+    <div className="p-6 pt-2 bg-white rounded-lg shadow-md min-h-[calc(100vh-10rem)]">
+      
 
-      <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-        <div className="flex gap-2">
+      <div className="flex items-center py-4 justify-between flex-wrap gap-4 mb-6">
+        <div className="flex gap-2 border p-2 rounded-lg">
           {(Object.keys(CATEGORY_MAP) as Category[]).map((category) => (
             <button
               key={category}
@@ -136,8 +156,11 @@ const Notifications: React.FC = () => {
                   ? "bg-[#073954] text-white"
                   : "bg-gray-100 border text-gray-700 hover:bg-gray-200"
               )}
-            >
-              {category.charAt(0) + category.slice(1).toLowerCase()}
+            ><span className="flex items-center gap-2">
+            {CATEGORY_ICONS[category]}
+            {category.charAt(0) + category.slice(1).toLowerCase()}
+          </span>
+          
             </button>
           ))}
         </div>
@@ -164,54 +187,90 @@ const Notifications: React.FC = () => {
 
       <div className="space-y-3">
         {filteredNotifications.length === 0 && (
-          <div className="text-center text-gray-500 py-12">No notifications found</div>
+          <div className="text-center text-gray-500 py-12">
+            No notifications found
+          </div>
         )}
 
-        {filteredNotifications.map((n) => (
-          <div
-            key={n.notification_id}
-            onClick={() => handleNotificationClick(n)}
-            className={clsx(
-              "flex gap-4 p-4 rounded-xl border transition cursor-pointer  hover:bg-blue-100",
-              n.is_read ? "bg-white border-gray-200" : "bg-blue-50 border-blue-200"
-            )}
-          >
-            <div className="mt-1">{getIcon(n.type)}</div>
+        {filteredNotifications.map((n, index) => {
+          const currentDate = formatDateLabel(new Date(n.created_at));
+          const prevDate =
+            index > 0
+              ? formatDateLabel(
+                  new Date(filteredNotifications[index - 1].created_at)
+                )
+              : null;
 
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className={clsx("text-sm", n.is_read ? "font-medium" : "font-semibold")}>
-                  {n.title}
-                </h3>
-                {!n.is_read && <span className="h-2 w-2 rounded-full bg-blue-500" />}
-              </div>
+          const showDateSeparator = currentDate !== prevDate;
 
-              <p className="text-sm text-gray-600 mb-2">
-                {n.issue?.ticket_number ? (
-                  <>
-                    {n.message.split(n.issue.ticket_number)[0]}
-                    <Link
-                      to={`/task/${n.issue.issue_id}`}
-                      className="text-[#073954] font-medium hover:underline"
-                      title="View issue"
-                    >
-                      {n.issue.ticket_number}
-                    </Link>
-                    {n.message.split(n.issue.ticket_number)[1]}
-                  </>
-                ) : (
-                  n.message
+          return (
+            <React.Fragment key={n.notification_id}>
+              {showDateSeparator && (
+                <div className="flex items-center gap-4 my-4">
+                  <div className="flex-1 h-px bg-gray-300" />
+                  <span className="text-xs font-medium text-gray-500">
+                    {currentDate}
+                  </span>
+                  <div className="flex-1 h-px bg-gray-300" />
+                </div>
+              )}
+
+              <div
+                onClick={() => handleNotificationClick(n)}
+                className={clsx(
+                  "flex gap-4 p-4 rounded-xl  bg-gray-100 transition cursor-pointer hover:bg-blue-100",
+                  n.is_read
+                    ? "  border-gray-200"
+                    : "bg-blue-50 border-blue-200"
                 )}
-              </p>
+              >
+                <div className="mt-1">{getIcon(n.type)}</div>
 
-              <span className="text-xs text-gray-500">
-                {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-              </span>
-            </div>
-          </div>
-        ))}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3
+                      className={clsx(
+                        "text-sm",
+                        n.is_read ? "font-medium" : "font-semibold"
+                      )}
+                    >
+                      {n.title}
+                    </h3>
+                    {!n.is_read && (
+                      <span className="h-2 w-2 rounded-full bg-blue-500" />
+                    )}
+                  </div>
+
+                  <p className="text-sm text-gray-600 mb-2">
+                    {n.issue?.ticket_number ? (
+                      <>
+                        {n.message.split(n.issue.ticket_number)[0]}
+                        <Link
+                          to={`/task/${n.issue.issue_id}`}
+                          className="text-[#073954] font-medium hover:underline"
+                        >
+                          {n.issue.ticket_number}
+                        </Link>
+                        {n.message.split(n.issue.ticket_number)[1]}
+                      </>
+                    ) : (
+                      n.message
+                    )}
+                  </p>
+
+                  <span className="text-xs text-gray-500">
+                    {formatDistanceToNow(new Date(n.created_at), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
+              </div>
+            </React.Fragment>
+          );
+        })}
       </div>
     </div>
+    </>
   );
 };
 
