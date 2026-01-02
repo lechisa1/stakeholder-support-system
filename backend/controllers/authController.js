@@ -270,7 +270,7 @@ const login = async (req, res) => {
 
     // Generate JWT with comprehensive user data
     const token = jwt.sign(userDataForToken, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRATION_TIME || "12h",
+      expiresIn: process.env.JWT_EXPIRATION_TIME || "c",
     });
 
     // Update last login

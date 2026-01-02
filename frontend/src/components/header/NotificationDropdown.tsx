@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
+
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import {
@@ -79,9 +80,8 @@ const NotificationItem = ({
 }) => {
   return (
     <DropdownItem
-      onClick={(e) => {
-        e.stopPropagation(); // Prevent Dropdown from closing
-        onClick(notification); // still mark as read / handle click
+      onClick={() => {
+        onClick(notification);
       }}
       className={`flex relative group border bg-blue-50 gap-3 rounded-lg border-b border-gray-100 p-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${
         !notification.is_read ? "bg-blue-50 dark:bg-blue-900/20" : ""
@@ -100,8 +100,7 @@ const NotificationItem = ({
             {notification.title}
           </span>
           <X
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={() => {
               onXClick(notification);
             }}
             className="hidden group-hover:flex hover:cursor-pointer hover:text-red-500 text-[#073954] w-5 h-5 absolute top-2 right-2"
@@ -152,11 +151,29 @@ export default function NotificationDropdown() {
       await markAsRead({
         notification_id: notification.notification_id,
       }).unwrap();
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     }
+
     closeDropdown();
-    // Optional: navigation logic
+
+    if (!notification.reference_id) {
+      navigate("/notifications");
+      return;
+    }
+
+    switch (true) {
+      case CATEGORY_MAP.ISSUE.includes(notification.type):
+        navigate(`/task/${notification.reference_id}`);
+        break;
+
+      case CATEGORY_MAP.USER.includes(notification.type):
+        navigate(`/users/${notification.reference_id}`);
+        break;
+
+      default:
+        navigate("/notifications");
+    }
   };
 
   const handleMarkAllAsRead = async () => {

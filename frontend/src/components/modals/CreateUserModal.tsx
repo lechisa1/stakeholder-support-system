@@ -1,4 +1,3 @@
-// Updated CreateUserModal with normal div modal instead of Dialog
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -13,7 +12,6 @@ import {
   SelectContent,
   SelectItem,
 } from "../ui/cn/select";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/cn/popover";
 
 import {
   useCreateUserMutation,
@@ -24,7 +22,7 @@ import {
   useGetInstitutesQuery,
   Institute,
 } from "../../redux/services/instituteApi";
-import { Check, XIcon, ChevronDown } from "lucide-react";
+import { Check, XIcon } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { getUserPositionId } from "../../utils/helper/userPosition";
 import { useGetRolesQuery } from "../../redux/services/roleApi";
@@ -66,9 +64,23 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [projectMetricsIds, setProjectMetricsIds] = useState<string[]>([]);
   const [position, setPosition] = useState("");
-  const [isActive, setIsActive] = useState(true);
   const [instituteId, setInstituteId] = useState<string>("");
   const [selectAll, setSelectAll] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [roleSearch, setRoleSearch] = useState("");
+
+  // Add error states
+  const [errors, setErrors] = useState({
+    fullName: "",
+    email: "",
+    phoneNumber: "",
+    institute: "",
+    roles: "",
+    metrics: "",
+  });
+
+  const fullNameRegex = /^[A-Za-z\s]*$/;
+  const phoneRegex = /^[0-9+]*$/;
 
   const { data: institutes, isLoading: loadingInstitutes } =
     useGetInstitutesQuery();
@@ -78,10 +90,10 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     isError,
   } = useGetProjectMetricsQuery({});
   const { data: rolesResponse } = useGetRolesQuery({
-    role_type: user_type == "internal_user" ? "internal" : "external",
+    role_type: user_type === "internal_user" ? "internal" : "external",
   });
   const roles = rolesResponse?.data || [];
-  const metrics: ProjectMetric[] = metricsData?.data || [];
+  const metrics: ProjectMetric[] = metricsData || [];
 
   const [createUser, { isLoading }] = useCreateUserMutation();
 
@@ -90,59 +102,132 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     const id = user?.institute?.institute_id || inistitute_id || "";
     setInstituteId(id);
   }, [user, inistitute_id, isOpen]);
+
   const positionId = getUserPositionId(logged_user_type, user_type, true);
 
-  // Update selectAll state based on current selection
+  // Update selectAll state
   useEffect(() => {
     if (metrics.length > 0) {
       setSelectAll(projectMetricsIds.length === metrics.length);
     }
   }, [projectMetricsIds, metrics]);
 
+  // Clear errors when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setErrors({
+        fullName: "",
+        email: "",
+        phoneNumber: "",
+        institute: "",
+        roles: "",
+        metrics: "",
+      });
+    }
+  }, [isOpen]);
+
   const handleMetricSelect = (metricId: string) => {
-    setProjectMetricsIds((prev) => {
-      if (prev.includes(metricId)) {
-        return prev.filter((id) => id !== metricId);
-      } else {
-        return [...prev, metricId];
-      }
-    });
+    setProjectMetricsIds((prev) =>
+      prev.includes(metricId)
+        ? prev.filter((id) => id !== metricId)
+        : [...prev, metricId]
+    );
+    // Clear metric error when user selects something
+    if (errors.metrics) {
+      setErrors((prev) => ({ ...prev, metrics: "" }));
+    }
   };
 
   const handleSelectAll = () => {
     if (selectAll) {
-      // Deselect all
       setProjectMetricsIds([]);
       setSelectAll(false);
     } else {
-      // Select all
       const allMetricIds = metrics.map((metric) => metric.project_metric_id);
       setProjectMetricsIds(allMetricIds);
       setSelectAll(true);
     }
+    // Clear metric error when selecting/deselecting all
+    if (errors.metrics) {
+      setErrors((prev) => ({ ...prev, metrics: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {
+      fullName: "",
+      email: "",
+      phoneNumber: "",
+      institute: "",
+      roles: "",
+      metrics: "",
+    };
+    let isValid = true;
+
+    // Validate full name
+    if (!fullName.trim()) {
+      newErrors.fullName = "Please enter full name";
+      isValid = false;
+    } else if (!/^[A-Za-z\s]+$/.test(fullName.trim())) {
+      newErrors.fullName = "Full name must contain only letters and spaces";
+      isValid = false;
+    }
+
+    // Validate email
+    if (!email.trim()) {
+      newErrors.email = "Please enter email";
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = "Please enter a valid email address";
+      isValid = false;
+    }
+
+    // Validate phone number (if provided)
+    if (phoneNumber && !/^\+?[0-9]{9,15}$/.test(phoneNumber.trim())) {
+      newErrors.phoneNumber =
+        "Phone number must contain only digits and may start with + (9–15 digits)";
+      isValid = false;
+    }
+
+    // Validate institute for external users
+    if (user_type === "external_user" && !instituteId) {
+      newErrors.institute = "Please select an institute for external users";
+      isValid = false;
+    }
+
+    // Validate roles
+    if (!selectedRoles.length) {
+      newErrors.roles = "Please select at least one role";
+      isValid = false;
+    }
+
+    // Validate metrics for internal users
+    if (user_type === "internal_user" && projectMetricsIds.length === 0) {
+      newErrors.metrics =
+        "Please select at least one project metric for internal users";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleSubmit = async () => {
-    if (!fullName || !email || !user_type_id || !selectedRoles.length) {
-      toast.error("Please fill all required fields");
+    // Clear previous errors
+    setErrors({
+      fullName: "",
+      email: "",
+      phoneNumber: "",
+      institute: "",
+      roles: "",
+      metrics: "",
+    });
+
+    // Validate form
+    if (!validateForm()) {
       return;
     }
 
-    if (user_type === "external_user") {
-      const finalInstituteId = user?.institute?.institute_id || instituteId;
-      if (!finalInstituteId) {
-        toast.error("Please select an institute for external users");
-        return;
-      }
-    }
-    if (user_type === "internal_user") {
-      if (projectMetricsIds.length === 0) {
-        toast.error(
-          "Please select at least one project metric for internal users"
-        );
-        return;
-      }
-    }
     const finalInstituteId = user?.institute?.institute_id || instituteId;
 
     const payload: CreateUserDto = {
@@ -174,11 +259,18 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     setEmail("");
     setPhoneNumber("");
     setPosition("");
-    setIsActive(true);
     setInstituteId("");
     setProjectMetricsIds([]);
     setSelectAll(false);
     setSelectedRoles([]);
+    setErrors({
+      fullName: "",
+      email: "",
+      phoneNumber: "",
+      institute: "",
+      roles: "",
+      metrics: "",
+    });
     onClose();
   };
 
@@ -186,9 +278,62 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     if (e.target === e.currentTarget) handleClose();
   };
 
+  const handleFullNameChange = (value: string) => {
+    if (fullNameRegex.test(value)) {
+      setFullName(value.replace(/\s{2,}/g, " "));
+    }
+    // Clear error when user starts typing
+    if (errors.fullName) {
+      setErrors((prev) => ({ ...prev, fullName: "" }));
+    }
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    // Clear error when user starts typing
+    if (errors.email) {
+      setErrors((prev) => ({ ...prev, email: "" }));
+    }
+  };
+
+  const handlePhoneNumberChange = (value: string) => {
+    let newValue = value;
+
+    if (!newValue.startsWith("+251")) {
+      newValue = "+251" + newValue.replace(/^\+?251?/, "");
+    }
+
+    if (/^\+251\d*$/.test(newValue)) {
+      setPhoneNumber(newValue);
+    }
+    // Clear error when user starts typing
+    if (errors.phoneNumber) {
+      setErrors((prev) => ({ ...prev, phoneNumber: "" }));
+    }
+  };
+
+  const handleInstituteChange = (value: string) => {
+    setInstituteId(value);
+    // Clear error when user selects something
+    if (errors.institute) {
+      setErrors((prev) => ({ ...prev, institute: "" }));
+    }
+  };
+
+  const handleRoleSelect = (roleId: string) => {
+    setSelectedRoles((prev) =>
+      prev.includes(roleId)
+        ? prev.filter((id) => id !== roleId)
+        : [...prev, roleId]
+    );
+    // Clear error when user selects something
+    if (errors.roles) {
+      setErrors((prev) => ({ ...prev, roles: "" }));
+    }
+  };
+
   if (!isOpen) return null;
 
-  // Determine if institute selection should be shown
   const showInstituteSelect =
     logged_user_type === "internal_user" && user_type === "external_user";
   const showMetricsSelect =
@@ -213,8 +358,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
 
         {/* Content */}
         <div className="w-full flex flex-col space-y-4">
-          {/* User Detail */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4  mt-2 pr-2">
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 pr-2">
             {showInstituteSelect && (
               <div className="space-y-2">
                 <Label className="block text-sm text-[#094C81] font-medium mb-2">
@@ -222,10 +366,14 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                 </Label>
                 <Select
                   value={instituteId}
-                  onValueChange={setInstituteId}
+                  onValueChange={handleInstituteChange}
                   disabled={loadingInstitutes}
                 >
-                  <SelectTrigger className="w-[300px] h-12 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none">
+                  <SelectTrigger
+                    className={`w-full h-12 border px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none ${
+                      errors.institute ? "border-red-500" : "border-gray-300"
+                    }`}
+                  >
                     <SelectValue
                       className="text-sm text-[#094C81] font-medium"
                       placeholder="Select Institute"
@@ -234,7 +382,6 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   <SelectContent className="text-sm bg-white text-[#094C81] font-medium">
                     {institutes?.map((inst: Institute) => (
                       <SelectItem
-                        className="text-sm text-[#094C81] font-medium"
                         key={inst.institute_id}
                         value={inst.institute_id}
                       >
@@ -243,30 +390,55 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.institute && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.institute}
+                  </p>
+                )}
               </div>
             )}
+
             <div className="space-y-2">
               <Label className="block text-sm text-[#094C81] font-medium mb-2">
                 Full Name <span className="text-red-500">*</span>
               </Label>
               <Input
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={(e) => handleFullNameChange(e.target.value)}
                 placeholder="John Doe"
-                className="w-full h-12 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
+                className={`w-full h-12 border px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none ${
+                  errors.fullName ? "border-red-500" : "border-gray-300"
+                }`}
               />
+              {errors.fullName && (
+                <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>
+              )}
             </div>
+
             <div className="space-y-2">
               <Label className="block text-sm text-[#094C81] font-medium mb-2">
-                Phone Number <span className="text-red-500">*</span>
+                Phone Number
               </Label>
               <Input
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="+251 9xxxxxxx"
-                className="w-full h-12 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
+                onFocus={() => {
+                  if (!phoneNumber) {
+                    setPhoneNumber("+251");
+                  }
+                }}
+                onChange={(e) => handlePhoneNumberChange(e.target.value)}
+                placeholder="+2519XXXXXXXX"
+                className={`w-full h-12 border px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] ${
+                  errors.phoneNumber ? "border-red-500" : "border-gray-300"
+                }`}
               />
+              {errors.phoneNumber && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.phoneNumber}
+                </p>
+              )}
             </div>
+
             <div className="space-y-2">
               <Label className="block text-sm text-[#094C81] font-medium mb-2">
                 Email <span className="text-red-500">*</span>
@@ -274,109 +446,99 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => handleEmailChange(e.target.value)}
                 placeholder="john@example.com"
-                className="w-full h-12 border border-gray-300 px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
+                className={`w-full h-12 border px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none ${
+                  errors.email ? "border-red-500" : "border-gray-300"
+                }`}
               />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              )}
             </div>
-            {/* ROLE MULTI SELECT */}
 
+            {/* ROLE MULTI SELECT */}
             <div className="w-full space-y-2">
               <Label className="text-sm font-medium text-[#094C81]">
                 Role <span className="text-red-500">*</span>
               </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="w-full max-h-28 min-h-12 h-fit border border-gray-300 p-2 rounded-md mt-1 text-[#094C81] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#094C81] focus:ring-offset-2 transition-all duration-200"
-                  >
-                    <div className="flex flex-wrap items-center gap-2 w-full">
-                      {selectedRoles.length === 0 && (
-                        <span className="text-sm w-full justify-between text-gray-400 flex items-center gap-2">
-                          Select Role
-                          <ChevronDown className="h-4 w-4 ml-auto" />
-                        </span>
-                      )}
 
-                      {selectedRoles.map((roleId) => {
-                        const r = roles.find(
-                          (rr: any) => rr.role_id === roleId
-                        );
-                        if (!r) return null;
+              {/* Selector box */}
+              <button
+                type="button"
+                onClick={() => setOpen((prev) => !prev)}
+                className={`w-full border rounded h-12 px-4 flex items-center justify-between text-left focus:ring-2 focus:ring-[#094C81] ${
+                  errors.roles ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <span className="text-sm text-[#094C81] truncate">
+                  {selectedRoles.length === 0
+                    ? "Select Role"
+                    : selectedRoles
+                        .map((id) => roles.find((r) => r.role_id === id)?.name)
+                        .join(", ")}
+                </span>
+                <span className="text-[#094C81]">{open ? "▲" : "▼"}</span>
+              </button>
 
-                        return (
-                          <span
-                            key={roleId}
-                            className="inline-flex items-center gap-1 rounded-md justify-center bg-[#094C81]/10 text-[#094C81] px-2 py-1 text-xs"
-                          >
-                            <span className="truncate max-w-[120px]">
-                              {r.name}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedRoles((prev) =>
-                                  prev.filter((id) => id !== roleId)
-                                );
-                              }}
-                              className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-[#094C81]/20 transition-colors"
-                              aria-label={`Remove ${r.name}`}
-                            >
-                              <XIcon className="h-3 w-3" />
-                            </button>
-                          </span>
-                        );
-                      })}
-                      {selectedRoles.length > 0 && (
-                        <ChevronDown className="h-4 w-4 ml-auto text-gray-400" />
-                      )}
-                    </div>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[300px] p-2 bg-white"
-                  align="start"
-                >
-                  <div className="max-h-64 overflow-y-auto">
-                    {roles
-                      .filter((r: any) => !selectedRoles.includes(r.role_id))
-                      .map((r: any) => (
-                        <button
+              {errors.roles && (
+                <p className="text-red-500 text-xs mt-1">{errors.roles}</p>
+              )}
+
+              {/* Dropdown PANEL (pushes content down) */}
+              <div
+                className={`border rounded-md transition-all duration-300 overflow-hidden ${
+                  open ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
+                }`}
+              >
+                {/* Search */}
+                <input
+                  type="text"
+                  placeholder="Search roles..."
+                  className="w-full px-3 py-2 border-b text-sm focus:outline-none"
+                  value={roleSearch}
+                  onChange={(e) => setRoleSearch(e.target.value)}
+                />
+
+                {/* Roles list */}
+                <div className="max-h-48 overflow-y-auto">
+                  {roles
+                    .filter((r) =>
+                      r.name.toLowerCase().includes(roleSearch.toLowerCase())
+                    )
+                    .map((r) => {
+                      const isSelected = selectedRoles.includes(r.role_id);
+                      return (
+                        <div
                           key={r.role_id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedRoles((prev) => [...prev, r.role_id]);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm text-[#094C81] hover:bg-[#094C81]/10 rounded-md cursor-pointer transition-colors"
+                          onClick={() => handleRoleSelect(r.role_id)}
+                          className={`flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-[#094C81]/10 ${
+                            isSelected ? "bg-[#094C81]/10" : ""
+                          }`}
                         >
-                          <span className="block truncate">{r.name}</span>
-                        </button>
-                      ))}
-                    {roles.filter(
-                      (r: any) => !selectedRoles.includes(r.role_id)
-                    ).length === 0 && (
-                      <div className="px-3 py-2 text-sm text-gray-400 text-center">
-                        All roles selected
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                          <span className="text-[#094C81] truncate">
+                            {r.name}
+                          </span>
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-[#094C81]" />
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
             </div>
           </div>
-          {/* metrics panel */}
+
+          {/* Metrics */}
           {showMetricsSelect && (
             <div className="w-full border border-gray-200 flex flex-col gap-4 p-5 shadow-sm rounded-lg">
-              {/* Header with count */}
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-3">
                   <h3 className="text-[#094C81] font-semibold text-lg">
                     User Skills
                   </h3>
                 </div>
-                {/* Global Select All Checkbox */}
                 {metrics.length > 0 && (
                   <div
                     className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-[#094C81]/10 cursor-pointer transition-all duration-200 border border-gray-200 bg-white"
@@ -389,9 +551,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                           : "border-gray-300 bg-white"
                       }`}
                     >
-                      {selectAll ? (
-                        <Check className="w-3 h-3 stroke-3" />
-                      ) : null}
+                      {selectAll && <Check className="w-3 h-3 stroke-3" />}
                     </div>
                     <span className="font-medium text-sm text-[#094C81]">
                       Select All
@@ -399,6 +559,10 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   </div>
                 )}
               </div>
+
+              {errors.metrics && (
+                <p className="text-red-500 text-xs mb-2">{errors.metrics}</p>
+              )}
 
               {loadingMetrics ? (
                 <div className="text-center py-8 text-gray-500 text-sm">
@@ -414,9 +578,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                 </div>
               ) : (
                 <div className="relative">
-                  {/* Scrollable container with better height */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-[400px] overflow-y-auto overflow-x-hidden pr-2 pb-2 custom-scrollbar">
-                    {/* Metrics List */}
                     {metrics.map((metric) => (
                       <div
                         key={metric.project_metric_id}
@@ -438,9 +600,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                         >
                           {projectMetricsIds.includes(
                             metric.project_metric_id
-                          ) ? (
-                            <Check className="w-2.5 h-2.5 stroke-3" />
-                          ) : null}
+                          ) && <Check className="w-2.5 h-2.5 stroke-3" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div
@@ -453,7 +613,6 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                       </div>
                     ))}
                   </div>
-                  {/* Scroll indicator hint for many items */}
                   {metrics.length > 12 && (
                     <div className="absolute bottom-0 left-0 right-2 h-8 bg-gradient-to-t from-gray-50/50 to-transparent pointer-events-none rounded-b-lg" />
                   )}

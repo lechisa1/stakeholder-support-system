@@ -25,12 +25,20 @@ const assignIssue = async (req, res) => {
     if (!issue) return res.status(404).json({ message: "Issue not found." });
 
     // 2. Validate assignee
-    const assignee = await User.findByPk(assignee_id, { transaction: t });
+    const assignee = await User.findByPk(assignee_id, {
+      where: { is_active: true },
+      transaction: t,
+    });
+
     if (!assignee)
       return res.status(404).json({ message: "Assignee user not found." });
 
     // 3. Validate assigner
-    const assigner = await User.findByPk(assigned_by, { transaction: t });
+    const assigner = await User.findByPk(assigned_by, {
+      where: { is_active: true },
+      transaction: t,
+    });
+
     if (!assigner)
       return res.status(404).json({ message: "Assigner user not found." });
 

@@ -47,7 +47,7 @@ const createIssue = async (req, res) => {
       issue_category_id,
       hierarchy_node_id,
       priority_id,
-      reported_by,
+
       assigned_to,
       action_taken,
       url_path,
@@ -56,6 +56,50 @@ const createIssue = async (req, res) => {
       attachment_ids, // optional array of attachment IDs
     } = req.body;
 
+    const reported_by = req.user?.user_id;
+    if (!reported_by) {
+      await t.rollback();
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    if (!title || !project_id) {
+      await t.rollback();
+      return res.status(400).json({
+        message: "title and project_id are required",
+      });
+    }
+    //validate user is active in project
+    // -----------------------------
+    const activeUser = await User.findOne({
+      where: {
+        user_id: reported_by,
+        is_active: true,
+      },
+      transaction: t,
+    });
+
+    if (!activeUser) {
+      await t.rollback();
+      return res.status(403).json({
+        message: "Inactive or disabled users cannot create issues",
+      });
+    }
+    // 1.1 VALIDATE ACTIVE PROJECT
+    // -----------------------------
+    const project = await Project.findOne({
+      where: {
+        project_id,
+        is_active: true, // ✅ only active projects
+      },
+      transaction: t,
+    });
+
+    if (!project) {
+      await t.rollback();
+      return res.status(400).json({
+        message:
+          "Issue cannot be created for an inactive or non-existent project",
+      });
+    }
     // Generate ticket number in controller
     const ticket_number = await generateTicket();
 
