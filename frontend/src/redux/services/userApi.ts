@@ -1,0 +1,446 @@
+// src/redux/apis/userApi.ts
+import { baseApi } from "../baseApi";
+
+// --------------------- Types ---------------------
+export interface UserType {
+  user_type_id: string;
+  name: string;
+  description?: string;
+}
+
+export interface UserPosition {
+  user_position_id: string;
+  name: string;
+  description?: string;
+}
+
+export interface Institute {
+  institute_id: string;
+  name: string;
+  description?: string;
+  is_active?: boolean;
+}
+
+export interface HierarchyNode {
+  hierarchy_node_id: string;
+  name: string;
+}
+
+export interface User {
+  user_id: string;
+  full_name: string;
+  email: string;
+  phone_number?: string;
+  position?: string;
+  is_active: boolean;
+  user_type_id: string;
+  institute_id?: string | null;
+  hierarchy_node_id?: string | null;
+  profile_image?: string;
+  is_first_logged_in?: boolean;
+  last_login_at?: string;
+  password_changed_at?: string;
+  created_at?: string;
+  updated_at?: string;
+  assigned_by?: string;
+  assigned_at?: string;
+  userType?: UserType;
+  userPosition?: UserPosition;
+  institute?: Institute;
+  hierarchyNode?: HierarchyNode;
+}
+
+export interface InternalNodeUserAssignment {
+  project_user_role_id: string;
+  project_id: string;
+  user_id: string;
+  role_id: string;
+  internal_node_id: string;
+  user: User;
+  role: {
+    role_id: string;
+    name: string;
+  };
+  internalNode: {
+    internal_node_id: string;
+    name: string;
+  };
+  is_active: boolean;
+  assigned_at: string;
+}
+
+export interface InternalProjectUserAssignment {
+  project_user_role_id: string;
+  project_id: string;
+  user_id: string;
+  role_id: string;
+  internal_node_id: string;
+  project_metric_id?: string;
+  user: User;
+  role: {
+    role_id: string;
+    name: string;
+  };
+  internalNode: {
+    internal_node_id: string;
+    name: string;
+    level: number;
+    parent_id?: string;
+  };
+  projectMetric?: {
+    project_metric_id: string;
+    name: string;
+    description?: string;
+  };
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  message: string;
+  data: T[];
+  meta?: PaginationMeta;
+}
+
+export interface CreateUserDto {
+  full_name: string;
+  email: string;
+  user_type_id: string;
+  user_position_id?: string;
+  institute_id?: string;
+  role_ids?: string[];
+  hierarchy_node_id?: string;
+  project_metrics_ids?: string[];
+  position?: string;
+  phone_number?: string;
+}
+
+export interface UpdateUserDto {
+  full_name?: string;
+  email?: string;
+  phone_number?: string;
+  position?: string;
+  user_type_id?: string;
+  institute_id?: string;
+  hierarchy_node_id?: string;
+  is_active?: boolean;
+  role_ids?: string[];
+  project_metrics_ids?: string[];
+}
+
+export interface GetUsersParams {
+  institute_id?: string;
+  user_type_id?: string;
+  user_position_id?: string;
+  hierarchy_node_id?: string;
+  is_active?: boolean;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface GetInternalNodeUsersParams {
+  project_id: string;
+  internal_node_id: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface GetInternalProjectUsersParams {
+  project_id: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface InternalNodeUsersResponse {
+  success: boolean;
+  message: string;
+  project_id: string;
+  internal_node_id: string;
+  search_query?: string;
+  count: number;
+  total_count: number;
+  data: InternalNodeUserAssignment[];
+  meta?: PaginationMeta;
+}
+
+export interface InternalProjectUsersResponse {
+  success: boolean;
+  message: string;
+  project_id: string;
+  search_query?: string;
+  count: number;
+  total_count: number;
+  data: InternalProjectUserAssignment[];
+  meta?: PaginationMeta;
+}
+
+// --------------------- API ---------------------
+export const userApi = baseApi.injectEndpoints({
+  endpoints: (builder) => ({
+    // Get all users (with optional filters)
+    getUsers: builder.query<PaginatedResponse<User>, GetUsersParams | void>({
+      query: (params) => {
+        if (!params || Object.keys(params).length === 0) {
+          // No filters passed → fetch all users
+          return `/users?page=1&pageSize=10`;
+        }
+
+        // Build query string from params
+        const queryParams: Record<string, string> = {};
+
+        if (params.institute_id) queryParams.institute_id = params.institute_id;
+        if (params.user_type_id) queryParams.user_type_id = params.user_type_id;
+        if (params.user_position_id)
+          queryParams.user_position_id = params.user_position_id;
+        if (params.hierarchy_node_id)
+          queryParams.hierarchy_node_id = params.hierarchy_node_id;
+        if (params.is_active !== undefined)
+          queryParams.is_active = params.is_active.toString();
+        if (params.search) queryParams.search = params.search;
+
+        queryParams.page = (params.page || 1).toString();
+        queryParams.pageSize = (params.pageSize || 10).toString();
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/users${queryString}`;
+      },
+      providesTags: ["User"],
+    }),
+
+    // Get users by institute ID
+    getUsersByInstituteId: builder.query<User[], string>({
+      query: (institute_id) => `/users/institute/${institute_id}`,
+      providesTags: ["User"],
+    }),
+
+    // Get users by project + hierarchy node
+    getUsersByHierarchyNodeId: builder.query<
+      any,
+      { project_id: string; hierarchy_node_id: string }
+    >({
+      query: ({ project_id, hierarchy_node_id }) =>
+        `/users/project/${project_id}/node/${hierarchy_node_id}`,
+      providesTags: ["User"],
+    }),
+
+    // Get users by project + Internal node
+    // getUsersByInternalNodeId: builder.query<
+    //   any,
+    //   { project_id: string; internal_node_id: string }
+    // >({
+    //   query: ({ project_id, internal_node_id }) =>
+    //     `/users/project/internal/${project_id}/node/${internal_node_id}`,
+    //   providesTags: ["User"],
+    // }),
+
+    getUsersByInternalNodeId: builder.query<
+      InternalNodeUsersResponse,
+      GetInternalNodeUsersParams
+    >({
+      query: ({
+        project_id,
+        internal_node_id,
+        search,
+        page = 1,
+        pageSize = 10,
+      }) => {
+        // Build query string
+        const queryParams: Record<string, string> = {};
+
+        queryParams.page = page.toString();
+        queryParams.pageSize = pageSize.toString();
+
+        if (search) queryParams.search = search;
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/users/project/internal/${project_id}/node/${internal_node_id}${queryString}`;
+      },
+      providesTags: (result, error, params) => [
+        {
+          type: "User",
+          id: `project-${params.project_id}-node-${params.internal_node_id}`,
+        },
+        "User",
+      ],
+    }),
+
+    // Get all users assigned to a project
+    getUsersAssignedToProject: builder.query<any, string>({
+      query: (project_id) => `/users/project/${project_id}`,
+      providesTags: ["User"],
+    }),
+
+    // Get all users assigned to a project
+    getInternalUsersAssignedToProject: builder.query<
+      InternalProjectUsersResponse,
+      GetInternalProjectUsersParams
+    >({
+      query: ({ project_id, search, page = 1, pageSize = 10 }) => {
+        // Build query string
+        const queryParams: Record<string, string> = {};
+
+        queryParams.page = page.toString();
+        queryParams.pageSize = pageSize.toString();
+
+        if (search) queryParams.search = search;
+
+        const queryString = "?" + new URLSearchParams(queryParams).toString();
+        return `/users/project/internal/${project_id}${queryString}`;
+      },
+      providesTags: (result, error, params) => [
+        {
+          type: "User",
+          id: `project-internal-${params.project_id}`,
+        },
+        "User",
+      ],
+    }),
+    // getInternalUsersAssignedToProject: builder.query<any, string>({
+    //   query: (project_id) => `/users/project/internal/${project_id}`,
+    //   providesTags: ["User"],
+    // }),
+
+    // Get users from an institute NOT assigned to a project
+    getUsersNotAssignedToProject: builder.query<
+      User[],
+      { institute_id: string; project_id: string }
+    >({
+      query: ({ institute_id, project_id }) =>
+        `/users/not-assigned/${institute_id}/${project_id}`,
+      providesTags: ["User"],
+    }),
+
+    // Get internal users not assigned to a project
+    getInternalUsersNotAssignedToProject: builder.query<
+      User[],
+      string // project_id
+    >({
+      query: (project_id) => `/users/internal-not-assigned/${project_id}`,
+      providesTags: ["User"],
+    }),
+
+    getInternalProjectSubNodeUsers: builder.query<
+      any,
+      { project_id: string; Internal_node_id: string }
+    >({
+      query: ({ project_id, Internal_node_id }) =>
+        `/users/project-subnode-users/${project_id}/${Internal_node_id}`,
+      providesTags: ["User"],
+    }),
+
+    // Get user by ID
+    getUserById: builder.query<User, string>({
+      query: (user_id) => `/users/${user_id}`,
+      providesTags: (result, error, user_id) => [{ type: "User", user_id }],
+    }),
+
+    // Create a new user
+    createUser: builder.mutation<User, CreateUserDto>({
+      query: (data) => ({
+        url: `/users`,
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    // Update user
+    updateUser: builder.mutation<
+      User,
+      { user_id: string; data: UpdateUserDto }
+    >({
+      query: ({ user_id, data }) => ({
+        url: `/users/${user_id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    // Delete (deactivate) user
+    deleteUser: builder.mutation<{ message: string }, string>({
+      query: (id) => ({
+        url: `/users/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    // Toggle user active status
+    toggleUserStatus: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        data: { user_id: string; is_active: boolean };
+      },
+      { id: string; is_active: boolean }
+    >({
+      query: ({ id, is_active }) => ({
+        url: `/users/${id}/toggle-status`,
+        method: "PATCH",
+        body: { is_active },
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: "User", id },
+        "User",
+      ],
+    }),
+
+    // Reset user password
+    resetUserPassword: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (id) => ({
+        url: `/users/${id}/reset-password`,
+        method: "POST",
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    // Get all user types
+    getUserTypes: builder.query<UserType[], void>({
+      query: () => `/users/user-types`,
+      providesTags: ["User"],
+    }),
+    // Get all user positions
+    getUserPositions: builder.query<UserPosition[], void>({
+      query: () => `/users/user-positions`,
+      providesTags: ["User"],
+    }),
+  }),
+  overrideExisting: false,
+});
+
+// --------------------- Hooks ---------------------
+export const {
+  useGetUsersQuery,
+  useGetUsersByInstituteIdQuery,
+  useGetUsersByHierarchyNodeIdQuery,
+  useGetUsersByInternalNodeIdQuery,
+  useGetUsersAssignedToProjectQuery,
+  useGetUsersNotAssignedToProjectQuery,
+  useGetInternalUsersAssignedToProjectQuery,
+  useGetInternalUsersNotAssignedToProjectQuery,
+  useGetInternalProjectSubNodeUsersQuery,
+  useGetUserByIdQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
+  useToggleUserStatusMutation,
+  useResetUserPasswordMutation,
+  useGetUserTypesQuery,
+  useGetUserPositionsQuery,
+} = userApi;
