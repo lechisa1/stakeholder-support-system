@@ -1,0 +1,186 @@
+{
+  "common": {
+    "submit": "አስገባ",
+    "loading": "በመጫን ላይ...",
+    "error": "አንድ ስህተት አጋጥሟል። እባክዎን ደግመው ይሞክሩ።",
+    "selected": "የተመረጡ",
+    "Cancel": "ሰርዝ",
+    "viewButton": "ይመልከቱት",
+    "id": "ቁጥር",
+    "status": "ሁኔታ",
+    "action": "ድርጊት",
+    "description": "መግለጫ"
+  },
+  "login": {
+    "title": "የኢትዮጵያ አርቲፊሻል ኢንተለጀንስ ኢንስቲትዩት",
+    "email_phone_number": "ኢሜይል ወይም ስልክ ቁጥር",
+    "password": "የሚስጥር ቁጥር",
+    "remember_me": "አስታውሰኝ",
+    "forgot_password": "የሚስጥር ቁጥር ረሳሁ",
+    "Signing_in": "በመግባት ላይ...",
+    "login": "ግባ"
+  },
+  "permission": {
+    "manage_permissions": "ፈቃዶችን አስተዳደር",
+    "permission": "ፈቃድ",
+    "current_role_permissions": "የአሁኑ ሚና ፈቃዶች፡",
+    "no_permission_available": "ምንም ፈቃድ የለም"
+  },
+  "role": {
+    "role": "ሚና",
+    "add_role":"ሚና አክል",
+    "role_name":"የሚና ስም"
+  },
+  "Subrole":{
+    "subrole_name":"Subrole Name",
+    "add_subrole":"Add SubRole",
+    "select_role":"Select Role"
+  },
+
+  "basedata": {
+    "title": "ቤዝ ዳታ",
+    "first_subtitle": "ይህ የማዕከላዊ አስተዳዳሪው ቤዝ ዳታ ነው።",
+    "subtitle": "ይህ የ{{title}} ቤዝ ዳታ ነው",
+    "organization_management": "የድርጅት አስተዳደር",
+    "city_management": "የከተማ አስተዳደር",
+    "subcity_management": "የክፍለ ከተማ አስተዳደር",
+    "zone_management": "የዞን አስተዳደር",
+    "region_management": "የክልል አስተዳደር",
+    "project": "ፕሮጀክት",
+    "project_management": "የፕሮጀክት አስተዳደር",
+    "branch_management": "የቅርንጫፍ አስተዳደር",
+    "role_management": "የሚና አስተዳደር",
+    "subrole_management": "Role Management",
+    "issue_category_management": "ጉዳይ ምድብ አስተዳደር",
+    "risk_level_management": "የአደጋ ደረጃ አስተዳደር",
+    "priority_level_management": "የቅድሚያ ደረጃ አስተዳደር",
+    "woreda_management": "የወረዳ አስተዳደር",
+    "organization": "ድርጅት",
+    "woreda": "ወረዳ",
+    "subcity": "ክፍለ ከተማ",
+    "city": "ከተማ",
+    "priority_level": "ቅድሚያ ደረጃ",
+    "issue_category": "ጉዳይ ምድብ",
+    "branch": "ቅርንጫፍ",
+    "response_time": "የመልስ ጊዜ",
+    "days": "ቀን/ቀናት",
+    "color_code":"Color Code",
+    "user_management":"User Management"
+  },
+  "organization": {
+    "add_organization": "አዲስ ድርጅት አክል",
+    "organization_name": "የድርጅት ስም",
+    "developed_system": "የሲስተሙ ስም",
+    "issue_category": "የጉዳይ ምድብ",
+    "modal_title": "አዲስ ድርጅት መዝግብ",
+    "organization_type": "የድርጅት አይነት"
+  },
+  "branch": {
+    "add_branch": "አዲስ ቅርንጫፍ አክል",
+    "modal_title": "አዲስ ቅርንጫፍ መዝግብ",
+    "branch_name": "የቅርንጫፍ ስም",
+    "location": "Location",
+    "branch_type": "Branch Type"
+  },
+  "city": {
+    "add_city": "አዲስ ከተማ አክል",
+    "modal_title": "አዲስ ከተማ መዝግብ",
+    "city_name": "የከተማ ስም"
+  },
+  "subcity": {
+    "add_subcity": "አዲስ ክፍለ ከተማ አክል",
+    "modal_title": "አዲስ ክፍለ ከተማ መዝግብ",
+    "subcity_name": "የክፍለ ከተማ ስም",
+    "select_city": "ከተማ ምረጥ"
+  },
+  "region": {
+    "add_region": "አዲስ ክልል አክል",
+    "modal_title": "አዲስ ክልል መዝግብ",
+    "region_name": "ክልል ስም"
+  },
+  "zone": {
+    "add_zone": "አዲስ ዞን አክል",
+    "modal_title": "አዲስ ዞን መዝግብ",
+    "zone_name": "የዞን ስም",
+    "select_region": "ክልል ምረጥ"
+  },
+  "woreda": {
+    "add_woreda": "አዲስ ወረዳ አክል",
+    "modal_title": "አዲስ ወረዳ መዝግብ",
+    "woreda_name": "የወረዳ ስም",
+    "select_subcity": "ክፍለ ከተማ ምረጥ"
+  },
+  "project": {
+    "add_project": "አዲስ ፕሮጀክት አክል",
+    "modal_title": "አዲስ ፕሮጀክት መዝግብ",
+    "project_name": "የፕሮጀክት ስም",
+    "select_organization": "ድርጅት ምረጥ"
+  },
+  "priority_level": {
+    "add_project": "አዲስ ቅድሚያ ደረጃ አክል",
+    "modal_title": "አዲስ ቅድሚያ ደረጃ መዝግብ",
+    "project_name": "የቅድሚያ ደረጃ ስም"
+  },
+  "issue_category": {
+    "add_issue_category": "አዲስ የጉዳይ ምድብ አክል",
+    "modal_title": "አዲስ የጉዳይ ምድብ መዝግብ",
+    "issue_category": "የጉዳይ ምድብ"
+  },
+  "issue": {
+    "issue_management": "ጉዳይ አስተዳደር",
+    "myissue": "የኔ ጉዳይ",
+    "add_issue": "አዲስ ሪፖርት አክል",
+    "modal_title": "አዲስ የጉዳይ መዝግብ",
+    "created_date": "የተመዘገበበት ቀን",
+    "priority_level": "ቅድሚያ ደረጃ",
+    "category": "የጉዳዩ ምድብ",
+    "issue_screenshot": "",
+    "action_taken": " የተወሰደ እርምጃ"
+  },
+    "org_structure":{
+    "add_hierarchy":"አክል_ተዋረድ"
+  },
+  "tasklist": {
+    "tasklist": "",
+    "priority_level": "ቅድሚያ ደረጃ",
+    "category": "የጉዳዩ ምድብ",
+    "system_name": "የሲስተሙ ስም",
+    "due_date": "የማጠናቀቂያ ቀን"
+  },
+  "QATask": {
+    "qa_task_list": "QA Task List",
+    "title": "Bug-Issue Tracking System",
+    "subtitle": "EAII QA Team – Issue Management"
+  },
+  "TLTask": {
+    "tl_task_list": "Team Leader Task List",
+    "title": "Bug-Issue Tracking System",
+    "subtitle": "EAII Team Leader – Issue Management",
+    "assign_developer":"Assign Developer",
+    "task_summary":"Task Summary",
+    "developer":"Developer"
+  },
+  "CATask":{
+     "ca_task_list": "Central Admin Task List",
+    "title": "Bug-Issue Tracking System",
+    "subtitle": "This is the issue  management of the  Organization central Admin",
+    "task_summary":"Task Summary"
+  },
+  "DeveloperTask": {
+    "developer_task_list": "Developer Task List",
+    "title": "Bug-Issue Tracking System",
+    "subtitle": "EAII Developer – Issue Management",
+    "fix_issue":"",
+    "modal_title":""
+  },
+  "user":{
+    "user_name":"User Name",
+    "full_name":"Full Name",
+    "user_type":"User Type",
+    "phone_number":"Phone Number",
+    "email":"Email",
+    "role":"Role",
+    "add_user":"Add User",
+    "organization_name": "የድርጅት ስም"
+  }
+}

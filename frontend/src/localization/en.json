@@ -1,0 +1,207 @@
+{
+  "common": {
+    "submit": "Submit",
+    "loading": "Loading...",
+    "error": "An error has occurred. Please try again.",
+    "selected": "Selected",
+    "Cancel": "Cancel",
+    "viewButton": "View",
+    "id": "ID",
+    "status": "Status",
+    "description": "Description",
+    "action": "Action"
+  },
+  "login": {
+    "title": "ETHIOPIAN ARTIFICIAL INTELLIGENCE INSTITUTE",
+    "title_am": "የኢትዮጵያ አርቲፊሻል ኢንተለጀንስ ኢንስቲትዩት",
+    "email_phone_number": "Email",
+    "password": "Password",
+    "remember_me": "Remember Me",
+    "forgot_password": "Forgot Password",
+    "Signing_in": "Signing in...",
+    "login": "Login"
+  },
+  "permission": {
+    "manage_permissions": "Manage Permissions",
+    "permission": "Permission",
+    "current_role_permissions": "Current role permissions:",
+    "no_permission_available": "No permissions available"
+  },
+   "role":{
+    "role":"Role",
+    "add_role":"Create Role",
+    "role_name":"Role Name"
+  },
+    "Subrole":{
+    "subrole_name":"Subrole Name",
+    "add_subrole":"Add SubRole",
+    "select_role":"Select Role"
+
+    },
+  "basedata": {
+    "title": "Base Data",
+    "first_subtitle": "This is the central admin basedata.",
+    "subtitle": "This is the Base Data of the {{title}}",
+    "organization_management": "Organization Management",
+    "subcity_management": "SubCity Management",
+    "issue_category_management": "Support Request Category",
+    "city_management": "City Management",
+    "priority_level_management": "Priority Level Management",
+    "role_management":"Role Management",
+    "role":"Role",
+    "permission_management":"Permission Management",
+    "permission":"Permission",
+    "zone_management": "Zone Management",
+    "region_management": "Region Management",
+    "branch_management": "Branch Management",
+    "level_management": "Structure Level",
+    "woreda_management": "Woreda Management",
+    "organization": "Organization",
+    "project": "Project",
+    "project_management": "Project Management",
+    "woreda": "Woreda",
+    "subcity": "Subcity",
+    "city": "City",
+    "priority_level": "Priority Level",
+    "risk_level_management": "Risk Level Management",
+    "issue_category": "Support Request Category",
+    "issue_flow": "Support Request Flow",
+    "issue_configuration": "Support Request Configuration",
+    "branch": "Branch",
+    "level": "Level",
+    "response_time": "Response Time",
+    "days": "Day/Days",
+    "org_structure": "Organization Structure",
+    "org_structure_management": "Organization Structure Management",
+    "color_code": "Color Code",
+    "user_management": "User Management",
+    "project_metrics_management": "Project Metrics Management",
+    "project_metrics": "Project Metrics",
+    "human_resource_management": "Human Resources",
+    "human_resource": "Human Resource"
+  },
+  "org_structure": {
+    "add_hierarchy": "Add Hierarchy"
+  },
+  "organization": {
+    "add_organization": "Add Organization",
+    "organization_name": "Organization Name",
+    "developed_system": "Developed System",
+    "issue_category": "Support Request Category",
+    "modal_title": "Create a new Organization",
+    "organization_type": "Organization Type"
+  },
+  "branch": {
+    "add_branch": "Add Branch",
+    "modal_title": "Add New Branch",
+    "branch_name": "Branch Name",
+    "location": "Location",
+    "branch_type": "Branch Type"
+  },
+  "level": {
+    "add_branch": "Add Level",
+    "modal_title": "Add New Level",
+    "branch_name": "Level Name",
+    "location": "Location",
+    "branch_type": "Level Type"
+  },
+  "city": {
+    "add_city": "Add City",
+    "modal_title": "Add new city",
+    "city_name": "City Name"
+  },
+  "subcity": {
+    "add_subcity": "Add SubCity",
+    "modal_title": "Add new city",
+    "subcity_name": "SubCity Name",
+    "select_city": "Select SubCity"
+  },
+  "region": {
+    "add_region": "Add Region",
+    "modal_title": "Add new region",
+    "region_name": "Region Name"
+  },
+  "zone": {
+    "add_zone": "Add Zone",
+    "modal_title": "Add new zone",
+    "zone_name": "zone Name",
+    "select_region": "Select region"
+  },
+  "woreda": {
+    "add_woreda": "Add Woreda",
+    "modal_title": "Add new Woreda",
+    "woreda_name": "Woreda name",
+    "select_subcity": "Select Subcity"
+  },
+  "project": {
+    "add_project": "Add Project",
+    "modal_title": "Add new Project",
+    "select_organization": "Select Organization",
+    "project_name": "Projet name"
+  },
+  "priority_level": {
+    "add_priority_level": "Add Priority Level",
+    "modal_title": "Add new Priority Level"
+  },
+  "issue_category": {
+    "add_issue_category": "Add Support Request Category",
+    "modal_title": "Add new Support Request Category",
+    "issue_category": "Support Request Category"
+  },
+  "issue": {
+    "issue_management": "Support Request Management",
+    "myissue": "My Support Requests",
+    "add_issue": "Report New Support Request",
+    "modal_title": "Add new Support Request",
+    "created_date": "Created Date",
+    "priority_level": "Priority Level",
+    "category": "Support Request Category",
+    "issue_screenshot": "Support Request Screenshot",
+    "action_taken": "Action Taken"
+  },
+
+  "task_list": {
+    "tasklist": "TaskList",
+    "title": "Support Request Tracking System",
+    "subtitle": "EAII QA Support Request Management",
+    "priority_level": "Priority Level",
+    "category": "Support Request Category",
+    "system_name": "System Name",
+    "due_date": "Due Date"
+  },
+  "QATask": {
+    "qa_task_list": "QA Task List",
+    "title": "Support Request Tracking System",
+    "subtitle": "EAII QA Team – Issue Management",
+    "qa_task_detail": "QA Task Detail"
+  },
+  "TLTask": {
+    "tl_task_list": "Team Leader Task List",
+    "title": "Support Request Tracking System",
+    "subtitle": "EAII Team Leader – Issue Management",
+    "assign_developer": "Assign Developer",
+    "task_summary": "Task Summary",
+    "developer": "Developer"
+  },
+  "DeveloperTask": {
+    "developer_task_list": "Developer Task List",
+    "title": "Support Request Tracking System",
+    "subtitle": "EAII Developer – Issue Management"
+  },
+  "CATask": {
+    "ca_task_list": "Central Admin Task List",
+    "title": "Support Request Tracking System",
+    "subtitle": "This is the support request  management of the  Organization central Admin",
+    "task_summary": "Task Summary"
+  },
+  "user": {
+    "user_name": "User Name",
+    "full_name": "Full Name",
+    "phone_number": "Phone Number",
+    "email": "Email",
+    "role": "Role",
+    "add_user": "Add User",
+    "user_type": "User Type",
+    "organization_name": "Organization Name"
+  }
+}
